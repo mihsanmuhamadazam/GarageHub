@@ -12,8 +12,10 @@ import {
   Bell,
   Search,
   Menu,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
+import { useAuth } from './contexts/AuthContext'
 import { useStore } from './store/useStore'
 import Login from './components/Auth/Login'
 import Signup from './components/Auth/Signup'
@@ -35,7 +37,14 @@ const navItems = [
 
 // Sidebar Component
 function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
-  const { currentUser, logout } = useStore()
+  const { user, signOut } = useAuth()
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const initials = user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const color = '#3b82f6'
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <>
@@ -93,17 +102,17 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
             <div className="flex items-center gap-3 mb-4">
               <div 
                 className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold"
-                style={{ backgroundColor: currentUser?.color + '20', color: currentUser?.color }}
+                style={{ backgroundColor: color + '20', color: color }}
               >
-                {currentUser?.avatar}
+                {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{currentUser?.name}</p>
-                <p className="text-xs text-gray-500 truncate">{currentUser?.email}</p>
+                <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
             <button 
-              onClick={logout}
+              onClick={handleSignOut}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
             >
               <LogOut className="w-4 h-4" />
@@ -118,9 +127,17 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
 
 // Header Component
 function Header({ setIsSidebarOpen }) {
-  const { currentUser, users } = useStore()
+  const { user, signOut } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const initials = user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const color = '#3b82f6'
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <header className="sticky top-0 z-30 bg-[#0c0f14]/80 backdrop-blur-xl border-b border-white/5">
@@ -191,11 +208,11 @@ function Header({ setIsSidebarOpen }) {
             >
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                style={{ backgroundColor: currentUser?.color + '20', color: currentUser?.color }}
+                style={{ backgroundColor: color + '20', color: color }}
               >
-                {currentUser?.avatar}
+                {initials}
               </div>
-              <span className="hidden sm:block text-sm font-medium text-white">{currentUser?.name?.split(' ')[0]}</span>
+              <span className="hidden sm:block text-sm font-medium text-white">{displayName.split(' ')[0]}</span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
             </button>
 
@@ -209,7 +226,7 @@ function Header({ setIsSidebarOpen }) {
                   </button>
                   <div className="my-1 h-px bg-white/5" />
                   <button 
-                    onClick={() => useStore.getState().logout()}
+                    onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
@@ -273,10 +290,33 @@ function AppLayout() {
   )
 }
 
+// Loading Screen
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-[#0c0f14] flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+            <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+            <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+          </svg>
+        </div>
+        <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto" />
+        <p className="text-gray-400 mt-2">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
 // Auth Wrapper
 function App() {
-  const { isAuthenticated } = useStore()
+  const { isAuthenticated, loading } = useAuth()
   const [authMode, setAuthMode] = useState('login')
+
+  if (loading) {
+    return <LoadingScreen />
+  }
 
   if (!isAuthenticated) {
     if (authMode === 'login') {

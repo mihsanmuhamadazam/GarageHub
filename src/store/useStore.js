@@ -183,10 +183,6 @@ const initialUsageLog = [
 export const useStore = create(
   persist(
     (set, get) => ({
-      // Auth State
-      isAuthenticated: false,
-      currentUser: null,
-      
       // Data State
       cars: initialCars,
       users: initialUsers,
@@ -194,42 +190,6 @@ export const useStore = create(
       services: initialServices,
       messages: initialMessages,
       usageLog: initialUsageLog,
-
-      // Auth Actions
-      login: (email, password) => {
-        const user = get().users.find(u => u.email === email)
-        if (user) {
-          set({ isAuthenticated: true, currentUser: user })
-          return { success: true }
-        }
-        return { success: false, error: 'Invalid credentials' }
-      },
-      
-      logout: () => {
-        set({ isAuthenticated: false, currentUser: null })
-      },
-      
-      signup: (name, email, password) => {
-        const existingUser = get().users.find(u => u.email === email)
-        if (existingUser) {
-          return { success: false, error: 'Email already exists' }
-        }
-        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase()
-        const newUser = {
-          id: Date.now().toString(),
-          name,
-          email,
-          avatar: initials,
-          role: 'member',
-          color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
-        }
-        set((state) => ({
-          users: [...state.users, newUser],
-          isAuthenticated: true,
-          currentUser: newUser,
-        }))
-        return { success: true }
-      },
 
       // Car Actions
       addCar: (car) =>
@@ -312,9 +272,7 @@ export const useStore = create(
           usageLog: [...state.usageLog, { ...log, id: Date.now().toString() }],
         })),
 
-      // User Actions
-      setCurrentUser: (user) => set({ currentUser: user }),
-      
+      // User Actions (for local team members display)
       addUser: (user) =>
         set((state) => ({
           users: [...state.users, { ...user, id: Date.now().toString() }],

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react'
-import { useStore } from '../../store/useStore'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Login({ onSwitchToSignup }) {
-  const { login } = useStore()
+  const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -15,13 +15,15 @@ export default function Login({ onSwitchToSignup }) {
     setError('')
     setIsLoading(true)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    const result = login(email, password)
-    if (!result.success) {
-      setError('Invalid email or password. Try: james@garagehub.com')
+    const { data, error } = await signIn(email, password)
+    
+    if (error) {
+      setError(error.message || 'Invalid email or password')
+      setIsLoading(false)
+      return
     }
+
+    // Success - AuthContext will handle the session update
     setIsLoading(false)
   }
 
@@ -104,13 +106,6 @@ export default function Login({ onSwitchToSignup }) {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-2">Welcome back</h2>
             <p className="text-gray-400">Sign in to your account to continue</p>
-          </div>
-
-          {/* Demo credentials hint */}
-          <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-400">
-              <strong>Demo Account:</strong> james@garagehub.com (any password)
-            </p>
           </div>
 
           {error && (
@@ -200,4 +195,3 @@ export default function Login({ onSwitchToSignup }) {
     </div>
   )
 }
-

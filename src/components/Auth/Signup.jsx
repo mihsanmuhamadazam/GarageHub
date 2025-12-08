@@ -1,20 +1,22 @@
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, User } from 'lucide-react'
-import { useStore } from '../../store/useStore'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, User, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Signup({ onSwitchToLogin }) {
-  const { signup } = useStore()
+  const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -28,13 +30,22 @@ export default function Signup({ onSwitchToLogin }) {
 
     setIsLoading(true)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800))
+    const { data, error } = await signUp(email, password, {
+      full_name: name,
+      avatar_initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
+    })
 
-    const result = signup(name, email, password)
-    if (!result.success) {
-      setError(result.error)
+    if (error) {
+      setError(error.message || 'Failed to create account')
+      setIsLoading(false)
+      return
     }
+
+    // Check if email confirmation is required
+    if (data?.user && !data?.session) {
+      setSuccess('Account created! Please check your email to confirm your account.')
+    }
+    
     setIsLoading(false)
   }
 
@@ -118,6 +129,13 @@ export default function Signup({ onSwitchToLogin }) {
             <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 animate-scaleIn">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
               <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3 animate-scaleIn">
+              <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
+              <p className="text-sm text-green-400">{success}</p>
             </div>
           )}
 
@@ -230,4 +248,3 @@ export default function Signup({ onSwitchToLogin }) {
     </div>
   )
 }
-
