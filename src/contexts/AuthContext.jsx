@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
@@ -15,8 +15,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [configError, setConfigError] = useState(!isSupabaseConfigured)
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -32,7 +38,6 @@ export function AuthProvider({ children }) {
         setLoading(false)
 
         if (event === 'SIGNED_IN') {
-          // You can sync user data here if needed
           console.log('User signed in:', session?.user?.email)
         }
         if (event === 'SIGNED_OUT') {
@@ -47,6 +52,9 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signUp = async (email, password, metadata = {}) => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: { message: 'Supabase is not configured' } }
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -58,6 +66,9 @@ export function AuthProvider({ children }) {
   }
 
   const signIn = async (email, password) => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: { message: 'Supabase is not configured' } }
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -66,6 +77,9 @@ export function AuthProvider({ children }) {
   }
 
   const signOut = async () => {
+    if (!isSupabaseConfigured) {
+      return { error: { message: 'Supabase is not configured' } }
+    }
     const { error } = await supabase.auth.signOut()
     if (error) {
       console.error('Error signing out:', error)
@@ -74,6 +88,9 @@ export function AuthProvider({ children }) {
   }
 
   const resetPassword = async (email) => {
+    if (!isSupabaseConfigured) {
+      return { data: null, error: { message: 'Supabase is not configured' } }
+    }
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
@@ -84,6 +101,7 @@ export function AuthProvider({ children }) {
     user,
     session,
     loading,
+    configError,
     signUp,
     signIn,
     signOut,
@@ -97,4 +115,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
-

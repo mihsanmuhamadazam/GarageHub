@@ -309,10 +309,40 @@ function LoadingScreen() {
   )
 }
 
+// Configuration Error Screen
+function ConfigErrorScreen() {
+  return (
+    <div className="min-h-screen bg-[#0c0f14] flex items-center justify-center p-4">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-2">Configuration Required</h1>
+        <p className="text-gray-400 mb-6">
+          Supabase environment variables are not configured. Please add the following to your Vercel project settings:
+        </p>
+        <div className="bg-[#1a1f2e] rounded-xl p-4 text-left mb-6">
+          <code className="text-sm text-blue-400 block mb-2">VITE_SUPABASE_URL</code>
+          <code className="text-sm text-blue-400 block">VITE_SUPABASE_ANON_KEY</code>
+        </div>
+        <p className="text-gray-500 text-sm">
+          Go to Vercel Dashboard → Project Settings → Environment Variables
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // Auth Wrapper
 function App() {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, configError } = useAuth()
   const [authMode, setAuthMode] = useState('login')
+
+  if (configError) {
+    return <ConfigErrorScreen />
+  }
 
   if (loading) {
     return <LoadingScreen />
