@@ -13,7 +13,8 @@ import {
   Search,
   Menu,
   X,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react'
 import { useAuth } from './contexts/AuthContext'
 import { useStore } from './store/useStore'
@@ -25,6 +26,7 @@ import BookingCalendar from './components/BookingCalendar'
 import ServiceTracker from './components/ServiceTracker'
 import Analytics from './components/Analytics'
 import CarChat from './components/CarChat'
+import Social from './components/Social'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -33,16 +35,19 @@ const navItems = [
   { id: 'service', label: 'Service', icon: Wrench },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
+  { id: 'social', label: 'Social', icon: Users },
 ]
 
 // Sidebar Component
 function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
   const { user, signOut } = useAuth()
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
-  const initials = user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const color = '#3b82f6'
+  const { profile } = useStore()
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const initials = profile?.avatar_initials || user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const color = profile?.color || '#3b82f6'
 
   const handleSignOut = async () => {
+    useStore.getState().clearData()
     await signOut()
   }
 
@@ -128,16 +133,20 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
 // Header Component
 function Header({ setIsSidebarOpen }) {
   const { user, signOut } = useAuth()
+  const { profile, pendingConnections } = useStore()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
-  const initials = user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const color = '#3b82f6'
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const initials = profile?.avatar_initials || user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const color = profile?.color || '#3b82f6'
 
   const handleSignOut = async () => {
+    useStore.getState().clearData()
     await signOut()
   }
+
+  const hasNotifications = pendingConnections?.length > 0
 
   return (
     <header className="sticky top-0 z-30 bg-[#0c0f14]/80 backdrop-blur-xl border-b border-white/5">
@@ -171,7 +180,7 @@ function Header({ setIsSidebarOpen }) {
               className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
             >
               <Bell className="w-5 h-5 text-gray-400" />
-              <span className="notification-dot" />
+              {hasNotifications && <span className="notification-dot" />}
             </button>
             
             {showNotifications && (
@@ -182,18 +191,21 @@ function Header({ setIsSidebarOpen }) {
                     <h3 className="font-semibold text-white">Notifications</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
-                    <div className="p-4 hover:bg-white/5 transition-colors border-b border-white/5">
-                      <p className="text-sm text-white">Oil change due for Family SUV</p>
-                      <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
-                    </div>
-                    <div className="p-4 hover:bg-white/5 transition-colors border-b border-white/5">
-                      <p className="text-sm text-white">Sarah has booked City Runner</p>
-                      <p className="text-xs text-gray-500 mt-1">5 hours ago</p>
-                    </div>
-                    <div className="p-4 hover:bg-white/5 transition-colors">
-                      <p className="text-sm text-white">Weekend Cruiser back from service</p>
-                      <p className="text-xs text-gray-500 mt-1">1 day ago</p>
-                    </div>
+                    {pendingConnections?.length > 0 ? (
+                      pendingConnections.map((conn) => (
+                        <div key={conn.id} className="p-4 hover:bg-white/5 transition-colors border-b border-white/5">
+                          <p className="text-sm text-white">
+                            <span className="font-medium">{conn.user?.full_name || 'Someone'}</span> wants to connect
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">Pending request</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center">
+                        <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">No new notifications</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -244,8 +256,18 @@ function Header({ setIsSidebarOpen }) {
 
 // Main App Layout
 function AppLayout() {
+  const { user } = useAuth()
+  const { initializeData, setCurrentUser, loading } = useStore()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Initialize data when user logs in
+  useEffect(() => {
+    if (user?.id) {
+      setCurrentUser(user)
+      initializeData(user.id)
+    }
+  }, [user?.id, initializeData, setCurrentUser])
 
   const renderContent = () => {
     switch (activeTab) {
@@ -261,6 +283,8 @@ function AppLayout() {
         return <Analytics />
       case 'messages':
         return <CarChat />
+      case 'social':
+        return <Social />
       default:
         return <Dashboard />
     }

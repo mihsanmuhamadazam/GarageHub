@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Plus, 
   X, 
@@ -15,10 +15,12 @@ import {
   Trash2,
   Edit,
   Settings,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { useStore } from '../store/useStore'
+import { useAuth } from '../contexts/AuthContext'
 
 const carImages = {
   suv: '🚙',
@@ -44,8 +46,29 @@ const serviceTypes = [
   { value: 'Other', icon: '📋', interval: null },
 ]
 
+// Loading Skeleton
+function ServiceSkeleton() {
+  return (
+    <div className="glass-light rounded-2xl p-5 animate-pulse">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-midnight-700/50 skeleton" />
+          <div>
+            <div className="h-5 w-24 bg-midnight-700/50 rounded skeleton mb-2" />
+            <div className="h-4 w-20 bg-midnight-700/50 rounded skeleton" />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-5 w-24 bg-midnight-700/50 rounded skeleton" />
+        <div className="h-5 w-24 bg-midnight-700/50 rounded skeleton" />
+      </div>
+    </div>
+  )
+}
+
 // Hero section
-function ServiceHero({ totalServices, totalCost }) {
+function ServiceHero({ totalServices, totalCost, loading }) {
   return (
     <div className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8 animate-slideUpFade">
       <div className="absolute inset-0 overflow-hidden">
@@ -72,11 +95,19 @@ function ServiceHero({ totalServices, totalCost }) {
         
         <div className="grid grid-cols-2 gap-4">
           <div className="glass-light rounded-2xl p-4 text-center animate-bounce-in stagger-1">
-            <p className="font-display text-3xl font-bold text-white">{totalServices}</p>
+            {loading ? (
+              <div className="h-8 w-12 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+            ) : (
+              <p className="font-display text-3xl font-bold text-white">{totalServices}</p>
+            )}
             <p className="text-xs text-midnight-400">Services</p>
           </div>
           <div className="glass-light rounded-2xl p-4 text-center animate-bounce-in stagger-2">
-            <p className="font-display text-3xl font-bold text-moss-400">${totalCost}</p>
+            {loading ? (
+              <div className="h-8 w-16 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+            ) : (
+              <p className="font-display text-3xl font-bold text-moss-400">${totalCost}</p>
+            )}
             <p className="text-xs text-midnight-400">Total Spent</p>
           </div>
         </div>
@@ -85,9 +116,10 @@ function ServiceHero({ totalServices, totalCost }) {
   )
 }
 
-function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
-  const { cars, addService, updateService } = useStore()
-  const [formData, setFormData] = useState(editService || {
+function ServiceModal({ isOpen, onClose, editService, selectedCarId, cars }) {
+  const { addService, updateService } = useStore()
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({
     carId: selectedCarId || cars[0]?.id || '',
     type: 'Oil Change',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -97,22 +129,51 @@ function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
     nextDue: '',
   })
 
+  useEffect(() => {
+    if (editService) {
+      setFormData({
+        carId: editService.carId,
+        type: editService.type,
+        date: editService.date,
+        mileage: editService.mileage?.toString() || '',
+        cost: editService.cost?.toString() || '',
+        notes: editService.notes || '',
+        nextDue: editService.nextDue?.toString() || '',
+      })
+    } else {
+      setFormData({
+        carId: selectedCarId || cars[0]?.id || '',
+        type: 'Oil Change',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        mileage: '',
+        cost: '',
+        notes: '',
+        nextDue: '',
+      })
+    }
+  }, [editService, selectedCarId, cars])
+
   const selectedServiceType = serviceTypes.find(s => s.value === formData.type)
   const selectedCar = cars.find(c => c.id === formData.carId)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSaving(true)
+    
     const serviceData = {
       ...formData,
       mileage: parseInt(formData.mileage) || 0,
       cost: parseFloat(formData.cost) || 0,
       nextDue: formData.nextDue ? parseInt(formData.nextDue) : null,
     }
+    
     if (editService) {
-      updateService(editService.id, serviceData)
+      await updateService(editService.id, serviceData)
     } else {
-      addService(serviceData)
+      await addService(serviceData)
     }
+    
+    setIsSaving(false)
     onClose()
   }
 
@@ -120,7 +181,7 @@ function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
     if (selectedServiceType?.interval && formData.mileage) {
       setFormData({
         ...formData,
-        nextDue: parseInt(formData.mileage) + selectedServiceType.interval,
+        nextDue: (parseInt(formData.mileage) + selectedServiceType.interval).toString(),
       })
     }
   }
@@ -153,11 +214,15 @@ function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
               className="w-full px-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 focus:border-moss-500 focus:ring-2 focus:ring-moss-500/20 focus:outline-none transition-all"
               required
             >
-              {cars.map((car) => (
-                <option key={car.id} value={car.id}>
-                  {carImages[car.image]} {car.name} - {car.make} {car.model}
-                </option>
-              ))}
+              {cars.length === 0 ? (
+                <option value="">No vehicles available</option>
+              ) : (
+                cars.map((car) => (
+                  <option key={car.id} value={car.id}>
+                    {carImages[car.image]} {car.name} - {car.make} {car.model}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
@@ -250,9 +315,17 @@ function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
 
           <button
             type="submit"
-            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-moss-500 to-moss-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-moss-500/30 hover:shadow-moss-500/50 hover:scale-[1.02] transition-all duration-500"
+            disabled={isSaving || cars.length === 0}
+            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-moss-500 to-moss-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-moss-500/30 hover:shadow-moss-500/50 hover:scale-[1.02] transition-all duration-500 disabled:opacity-50"
           >
-            {editService ? 'Update Service' : 'Log Service'}
+            {isSaving ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              editService ? 'Update Service' : 'Log Service'
+            )}
           </button>
         </form>
       </div>
@@ -260,17 +333,17 @@ function ServiceModal({ isOpen, onClose, editService, selectedCarId }) {
   )
 }
 
-function ServiceCard({ service, car, onEdit, onDelete, index }) {
+function ServiceCard({ service, car, onEdit, onDelete, index, isDeleting }) {
   const serviceType = serviceTypes.find(s => s.value === service.type)
-  const isOverdue = service.nextDue && car.mileage >= service.nextDue
-  const isUpcoming = service.nextDue && car.mileage >= service.nextDue - 1000 && !isOverdue
+  const isOverdue = service.nextDue && car && (car.mileage || 0) >= service.nextDue
+  const isUpcoming = service.nextDue && car && (car.mileage || 0) >= service.nextDue - 1000 && !isOverdue
 
   return (
     <div 
       className="animate-slideUpFade"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="glass-light rounded-2xl p-5 hover:bg-white/5 transition-all duration-300 group shine-effect">
+      <div className={`glass-light rounded-2xl p-5 hover:bg-white/5 transition-all duration-300 group shine-effect ${isDeleting ? 'opacity-50' : ''}`}>
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-midnight-700/50 flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110">
@@ -290,9 +363,14 @@ function ServiceCard({ service, car, onEdit, onDelete, index }) {
             </button>
             <button
               onClick={() => onDelete(service.id)}
-              className="p-2 rounded-lg hover:bg-red-500/20 transition-colors"
+              disabled={isDeleting}
+              className="p-2 rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50"
             >
-              <Trash2 className="w-4 h-4 text-red-400" />
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 text-red-400" />
+              )}
             </button>
           </div>
         </div>
@@ -304,12 +382,12 @@ function ServiceCard({ service, car, onEdit, onDelete, index }) {
           </div>
           <div className="flex items-center gap-2 text-midnight-400">
             <Gauge className="w-4 h-4" />
-            <span>{service.mileage.toLocaleString()} km</span>
+            <span>{(service.mileage || 0).toLocaleString()} km</span>
           </div>
-          {service.cost > 0 && (
+          {(service.cost || 0) > 0 && (
             <div className="flex items-center gap-2 text-midnight-400">
               <DollarSign className="w-4 h-4" />
-              <span>${service.cost.toFixed(2)}</span>
+              <span>${(service.cost || 0).toFixed(2)}</span>
             </div>
           )}
           {service.nextDue && (
@@ -338,10 +416,20 @@ function ServiceCard({ service, car, onEdit, onDelete, index }) {
 }
 
 export default function ServiceTracker() {
-  const { services, cars, deleteService } = useStore()
+  const { user } = useAuth()
+  const { services, cars, loading, deleteService, fetchServices } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingService, setEditingService] = useState(null)
   const [selectedCarId, setSelectedCarId] = useState('all')
+  const [deletingId, setDeletingId] = useState(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchServices(user.id)
+    }
+  }, [user?.id, fetchServices])
+
+  const isLoading = loading.services || loading.global
 
   const filteredServices = selectedCarId === 'all' 
     ? services 
@@ -361,13 +449,19 @@ export default function ServiceTracker() {
     setEditingService(null)
   }
 
+  const handleDelete = async (id) => {
+    setDeletingId(id)
+    await deleteService(id)
+    setDeletingId(null)
+  }
+
   // Calculate upcoming services
   const upcomingServices = cars.flatMap(car => {
     const carServices = services.filter(s => s.carId === car.id && s.nextDue)
     return carServices.map(s => ({
       ...s,
       car,
-      remaining: s.nextDue - car.mileage,
+      remaining: s.nextDue - (car.mileage || 0),
     }))
   }).filter(s => s.remaining <= 2000).sort((a, b) => a.remaining - b.remaining)
 
@@ -376,7 +470,11 @@ export default function ServiceTracker() {
   return (
     <div>
       {/* Hero Section */}
-      <ServiceHero totalServices={services.length} totalCost={totalCosts.toFixed(0)} />
+      <ServiceHero 
+        totalServices={services.length} 
+        totalCost={totalCosts.toFixed(0)}
+        loading={isLoading}
+      />
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-slideUpFade stagger-1">
@@ -410,7 +508,9 @@ export default function ServiceTracker() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Service Log */}
         <div className="lg:col-span-2 space-y-4">
-          {sortedServices.length > 0 ? (
+          {isLoading ? (
+            [1, 2, 3].map((i) => <ServiceSkeleton key={i} />)
+          ) : sortedServices.length > 0 ? (
             sortedServices.map((service, index) => {
               const car = cars.find(c => c.id === service.carId)
               return (
@@ -419,8 +519,9 @@ export default function ServiceTracker() {
                   service={service}
                   car={car}
                   onEdit={handleEdit}
-                  onDelete={deleteService}
+                  onDelete={handleDelete}
                   index={index}
+                  isDeleting={deletingId === service.id}
                 />
               )
             })
@@ -450,7 +551,11 @@ export default function ServiceTracker() {
             </h3>
 
             <div className="space-y-3">
-              {upcomingServices.length > 0 ? (
+              {isLoading ? (
+                [1, 2].map((i) => (
+                  <div key={i} className="h-24 bg-midnight-700/50 rounded-xl skeleton" />
+                ))
+              ) : upcomingServices.length > 0 ? (
                 upcomingServices.map((service, index) => {
                   const isOverdue = service.remaining <= 0
                   return (
@@ -522,6 +627,7 @@ export default function ServiceTracker() {
         onClose={handleCloseModal}
         editService={editingService}
         selectedCarId={selectedCarId !== 'all' ? selectedCarId : null}
+        cars={cars}
       />
     </div>
   )

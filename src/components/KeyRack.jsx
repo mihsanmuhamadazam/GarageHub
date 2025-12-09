@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Plus, 
   Key, 
@@ -15,9 +15,11 @@ import {
   X,
   Sparkles,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react'
 import { useStore } from '../store/useStore'
+import { useAuth } from '../contexts/AuthContext'
 
 const carImages = {
   suv: '🚙',
@@ -58,8 +60,47 @@ const statusConfig = {
   },
 }
 
+// Loading Skeleton Component
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="glass-card rounded-3xl p-6">
+        <div className="flex items-start justify-between mb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-midnight-700/50 skeleton" />
+            <div>
+              <div className="h-5 w-32 bg-midnight-700/50 rounded skeleton mb-2" />
+              <div className="h-4 w-24 bg-midnight-700/50 rounded skeleton" />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2 mb-5">
+          <div className="h-8 w-24 bg-midnight-700/50 rounded-xl skeleton" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="h-20 bg-midnight-700/50 rounded-xl skeleton" />
+          <div className="h-20 bg-midnight-700/50 rounded-xl skeleton" />
+        </div>
+        <div className="h-12 bg-midnight-700/50 rounded-xl skeleton mb-5" />
+        <div className="h-14 bg-midnight-700/50 rounded-xl skeleton" />
+      </div>
+    </div>
+  )
+}
+
+// Loading Grid
+function LoadingGrid() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[1, 2, 3].map((i) => (
+        <LoadingSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
 // Hero section component
-function HeroSection({ availableCars, totalCars }) {
+function HeroSection({ availableCars, totalCars, loading }) {
   return (
     <div className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8 animate-slideUpFade">
       {/* Background decoration */}
@@ -91,14 +132,26 @@ function HeroSection({ availableCars, totalCars }) {
         {/* Animated car illustration */}
         <div className="relative">
           <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-ember-500/20 via-transparent to-blue-500/20 flex items-center justify-center animate-float">
-            <div className="text-8xl md:text-9xl animate-float-slow">🚗</div>
+            {loading ? (
+              <Loader2 className="w-20 h-20 text-ember-400/50 animate-spin" />
+            ) : (
+              <div className="text-8xl md:text-9xl animate-float-slow">🚗</div>
+            )}
           </div>
           {/* Orbiting stats */}
           <div className="absolute -top-2 left-1/2 -translate-x-1/2 glass px-3 py-1.5 rounded-full animate-bounce-in stagger-1">
-            <span className="text-xs font-medium text-moss-400">{availableCars} Ready</span>
+            {loading ? (
+              <div className="w-12 h-4 bg-midnight-700/50 rounded skeleton" />
+            ) : (
+              <span className="text-xs font-medium text-moss-400">{availableCars} Ready</span>
+            )}
           </div>
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 glass px-3 py-1.5 rounded-full animate-bounce-in stagger-2">
-            <span className="text-xs font-medium text-midnight-300">{totalCars} Total</span>
+            {loading ? (
+              <div className="w-12 h-4 bg-midnight-700/50 rounded skeleton" />
+            ) : (
+              <span className="text-xs font-medium text-midnight-300">{totalCars} Total</span>
+            )}
           </div>
         </div>
       </div>
@@ -107,7 +160,7 @@ function HeroSection({ availableCars, totalCars }) {
 }
 
 // Stats cards component
-function StatsCards({ availableCars, inUseCars, maintenanceCars }) {
+function StatsCards({ availableCars, inUseCars, maintenanceCars, loading }) {
   const stats = [
     { 
       label: 'Available', 
@@ -146,7 +199,11 @@ function StatsCards({ availableCars, inUseCars, maintenanceCars }) {
               <div className={`w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-500`}>
                 <Icon className="w-6 h-6 text-white" />
               </div>
-              <p className="font-display text-3xl font-bold text-white mb-1 count-up">{stat.value}</p>
+              {loading ? (
+                <div className="h-8 w-12 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+              ) : (
+                <p className="font-display text-3xl font-bold text-white mb-1 count-up">{stat.value}</p>
+              )}
               <p className="text-sm text-midnight-400">{stat.label}</p>
             </div>
           </div>
@@ -159,17 +216,27 @@ function StatsCards({ availableCars, inUseCars, maintenanceCars }) {
 function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
-  const { users, currentUser } = useStore()
+  const [isUpdating, setIsUpdating] = useState(false)
+  const { profile } = useStore()
   
-  const status = statusConfig[car.status]
+  const status = statusConfig[car.status] || statusConfig['available']
   const StatusIcon = status.icon
+
+  const handleStatusChange = async (newStatus, driver) => {
+    setIsUpdating(true)
+    await onStatusChange(car.id, newStatus, driver)
+    setIsUpdating(false)
+    setStatusMenuOpen(false)
+  }
+
+  const currentUserName = profile?.full_name || 'You'
 
   return (
     <div 
       className="animate-slideUpFade card-3d"
       style={{ animationDelay: `${(index + 3) * 100}ms` }}
     >
-      <div className={`card-3d-inner glass-card rounded-3xl p-6 transition-all duration-500 hover:bg-white/5 ${status.glow} group shine-effect`}>
+      <div className={`card-3d-inner glass-card rounded-3xl p-6 transition-all duration-500 hover:bg-white/5 ${status.glow} group shine-effect ${isUpdating ? 'opacity-70' : ''}`}>
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div className="flex items-center gap-4">
@@ -223,7 +290,11 @@ function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
         {/* Status Badge */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
           <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${status.bg} ${status.border} border transition-all duration-300`}>
-            <StatusIcon className={`w-4 h-4 ${status.color}`} />
+            {isUpdating ? (
+              <Loader2 className={`w-4 h-4 ${status.color} animate-spin`} />
+            ) : (
+              <StatusIcon className={`w-4 h-4 ${status.color}`} />
+            )}
             <span className={`text-sm font-semibold ${status.color}`}>{status.label}</span>
           </div>
           {car.currentDriver && (
@@ -242,7 +313,7 @@ function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
               <span className="text-xs uppercase tracking-wider">Mileage</span>
             </div>
             <p className="font-display text-xl font-bold text-white">
-              {car.mileage.toLocaleString()}
+              {car.mileage?.toLocaleString() || 0}
               <span className="text-sm font-normal text-midnight-400 ml-1">km</span>
             </p>
           </div>
@@ -253,16 +324,16 @@ function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xl font-bold font-display text-white">{car.fuelLevel}%</span>
+                <span className="text-xl font-bold font-display text-white">{car.fuelLevel || 0}%</span>
               </div>
               <div className="h-2 bg-midnight-800/50 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-1000 ${
-                    car.fuelLevel > 50 ? 'bg-gradient-to-r from-moss-500 to-moss-400' : 
-                    car.fuelLevel > 25 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' : 
+                    (car.fuelLevel || 0) > 50 ? 'bg-gradient-to-r from-moss-500 to-moss-400' : 
+                    (car.fuelLevel || 0) > 25 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' : 
                     'bg-gradient-to-r from-red-500 to-red-400'
                   } progress-animated`}
-                  style={{ width: `${car.fuelLevel}%` }}
+                  style={{ width: `${car.fuelLevel || 0}%` }}
                 />
               </div>
             </div>
@@ -272,26 +343,30 @@ function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
         {/* License Plate */}
         <div className="flex items-center gap-3 mb-5 px-4 py-3 rounded-xl bg-gradient-to-r from-midnight-800/50 to-midnight-900/50 border border-midnight-700/50">
           <Car className="w-5 h-5 text-ember-400" />
-          <span className="font-mono text-sm text-white tracking-widest">{car.plate}</span>
+          <span className="font-mono text-sm text-white tracking-widest">{car.plate || 'NO PLATE'}</span>
         </div>
 
         {/* Action Button */}
         <div className="relative">
           <button
             onClick={() => setStatusMenuOpen(!statusMenuOpen)}
-            disabled={car.status === 'maintenance'}
+            disabled={car.status === 'maintenance' || isUpdating}
             className={`btn-premium w-full flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-sm uppercase tracking-wider transition-all duration-500 ${
               car.status === 'available'
                 ? 'bg-gradient-to-r from-moss-500 to-moss-600 text-white shadow-lg shadow-moss-500/30 hover:shadow-moss-500/50 hover:scale-[1.02]'
-                : car.status === 'in-use' && car.currentDriver === currentUser.name
+                : car.status === 'in-use' && car.currentDriver === currentUserName
                 ? 'bg-gradient-to-r from-ember-500 to-ember-600 text-white shadow-lg shadow-ember-500/30 hover:shadow-ember-500/50 hover:scale-[1.02]'
                 : 'bg-midnight-800/50 text-midnight-400 cursor-not-allowed'
             }`}
           >
-            <Key className="w-5 h-5" />
+            {isUpdating ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Key className="w-5 h-5" />
+            )}
             {car.status === 'available' 
               ? 'Take Keys' 
-              : car.status === 'in-use' && car.currentDriver === currentUser.name
+              : car.status === 'in-use' && car.currentDriver === currentUserName
               ? 'Return Keys'
               : car.status === 'maintenance'
               ? 'In Maintenance'
@@ -308,10 +383,7 @@ function CarCard({ car, onEdit, onDelete, onStatusChange, index }) {
                   return (
                     <button
                       key={key}
-                      onClick={() => {
-                        onStatusChange(car.id, key, key === 'in-use' ? currentUser.name : null)
-                        setStatusMenuOpen(false)
-                      }}
+                      onClick={() => handleStatusChange(key, key === 'in-use' ? currentUserName : null)}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors ${
                         car.status === key ? config.bg : ''
                       }`}
@@ -344,10 +416,33 @@ function AddCarModal({ isOpen, onClose, editCar, onSave }) {
     status: 'available',
     currentDriver: null,
   })
+  const [isSaving, setIsSaving] = useState(false)
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (editCar) {
+      setFormData(editCar)
+    } else {
+      setFormData({
+        name: '',
+        make: '',
+        model: '',
+        year: new Date().getFullYear(),
+        plate: '',
+        color: '#ff5a1f',
+        image: 'sedan',
+        mileage: 0,
+        fuelLevel: 100,
+        status: 'available',
+        currentDriver: null,
+      })
+    }
+  }, [editCar])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSave(formData)
+    setIsSaving(true)
+    await onSave(formData)
+    setIsSaving(false)
     onClose()
   }
 
@@ -480,9 +575,17 @@ function AddCarModal({ isOpen, onClose, editCar, onSave }) {
 
           <button
             type="submit"
-            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-ember-500 to-ember-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-ember-500/30 hover:shadow-ember-500/50 hover:scale-[1.02] transition-all duration-500"
+            disabled={isSaving}
+            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-ember-500 to-ember-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-ember-500/30 hover:shadow-ember-500/50 hover:scale-[1.02] transition-all duration-500 disabled:opacity-50"
           >
-            {editCar ? 'Save Changes' : 'Add Vehicle'}
+            {isSaving ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              editCar ? 'Save Changes' : 'Add Vehicle'
+            )}
           </button>
         </form>
       </div>
@@ -520,20 +623,37 @@ function EmptyState({ onAdd }) {
 }
 
 export default function KeyRack() {
-  const { cars, addCar, updateCar, deleteCar, toggleCarStatus } = useStore()
+  const { user } = useAuth()
+  const { 
+    cars, 
+    vehicles,
+    loading,
+    addCar, 
+    updateCar, 
+    deleteCar, 
+    toggleCarStatus,
+    fetchVehicles,
+  } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCar, setEditingCar] = useState(null)
+
+  // Fetch vehicles when component mounts or user changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchVehicles(user.id)
+    }
+  }, [user?.id, fetchVehicles])
 
   const handleEdit = (car) => {
     setEditingCar(car)
     setModalOpen(true)
   }
 
-  const handleSave = (carData) => {
+  const handleSave = async (carData) => {
     if (editingCar) {
-      updateCar(editingCar.id, carData)
+      await updateCar(editingCar.id, carData)
     } else {
-      addCar(carData)
+      await addCar(carData)
     }
     setEditingCar(null)
   }
@@ -543,6 +663,14 @@ export default function KeyRack() {
     setEditingCar(null)
   }
 
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this vehicle?')) {
+      await deleteCar(id)
+    }
+  }
+
+  const isLoading = loading.vehicles || loading.global
+
   const availableCars = cars.filter(c => c.status === 'available').length
   const inUseCars = cars.filter(c => c.status === 'in-use').length
   const maintenanceCars = cars.filter(c => c.status === 'maintenance').length
@@ -550,20 +678,29 @@ export default function KeyRack() {
   return (
     <div>
       {/* Hero Section */}
-      <HeroSection availableCars={availableCars} totalCars={cars.length} />
+      <HeroSection 
+        availableCars={availableCars} 
+        totalCars={cars.length} 
+        loading={isLoading}
+      />
 
       {/* Stats Section */}
       <StatsCards 
         availableCars={availableCars} 
         inUseCars={inUseCars} 
-        maintenanceCars={maintenanceCars} 
+        maintenanceCars={maintenanceCars}
+        loading={isLoading}
       />
 
       {/* Header with Add Button */}
       <div className="flex items-center justify-between mb-6 animate-slideUpFade stagger-3">
         <div>
           <h3 className="font-display text-xl font-bold text-white">Your Vehicles</h3>
-          <p className="text-sm text-midnight-400">{cars.length} vehicle{cars.length !== 1 ? 's' : ''} in your garage</p>
+          {isLoading ? (
+            <div className="h-4 w-32 bg-midnight-700/50 rounded skeleton mt-1" />
+          ) : (
+            <p className="text-sm text-midnight-400">{cars.length} vehicle{cars.length !== 1 ? 's' : ''} in your garage</p>
+          )}
         </div>
         <button
           onClick={() => setModalOpen(true)}
@@ -575,22 +712,26 @@ export default function KeyRack() {
       </div>
 
       {/* Car Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cars.length > 0 ? (
-          cars.map((car, index) => (
-            <CarCard 
-              key={car.id}
-              car={car} 
-              index={index}
-              onEdit={handleEdit}
-              onDelete={deleteCar}
-              onStatusChange={toggleCarStatus}
-            />
-          ))
-        ) : (
-          <EmptyState onAdd={() => setModalOpen(true)} />
-        )}
-      </div>
+      {isLoading ? (
+        <LoadingGrid />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cars.length > 0 ? (
+            cars.map((car, index) => (
+              <CarCard 
+                key={car.id}
+                car={car} 
+                index={index}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onStatusChange={toggleCarStatus}
+              />
+            ))
+          ) : (
+            <EmptyState onAdd={() => setModalOpen(true)} />
+          )}
+        </div>
+      )}
 
       <AddCarModal 
         isOpen={modalOpen} 

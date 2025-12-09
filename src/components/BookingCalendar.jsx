@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -12,7 +12,8 @@ import {
   Trash2,
   Sparkles,
   CalendarDays,
-  Timer
+  Timer,
+  Loader2
 } from 'lucide-react'
 import { 
   format, 
@@ -30,6 +31,7 @@ import {
   isWithinInterval
 } from 'date-fns'
 import { useStore } from '../store/useStore'
+import { useAuth } from '../contexts/AuthContext'
 
 const carImages = {
   suv: '🚙',
@@ -38,6 +40,24 @@ const carImages = {
   truck: '🛻',
   van: '🚐',
   sports: '🏎️',
+}
+
+// Loading Skeleton
+function BookingSkeleton() {
+  return (
+    <div className="glass-light rounded-xl p-4 animate-pulse">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-midnight-700/50 skeleton" />
+          <div className="h-5 w-24 bg-midnight-700/50 rounded skeleton" />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-4 w-20 bg-midnight-700/50 rounded skeleton" />
+        <div className="h-4 w-32 bg-midnight-700/50 rounded skeleton" />
+      </div>
+    </div>
+  )
 }
 
 // Hero section for calendar
@@ -76,9 +96,10 @@ function CalendarHero() {
   )
 }
 
-function BookingModal({ isOpen, onClose, selectedDate, editBooking }) {
-  const { cars, users, currentUser, addBooking, updateBooking } = useStore()
-  const [formData, setFormData] = useState(editBooking || {
+function BookingModal({ isOpen, onClose, selectedDate, editBooking, cars, profile }) {
+  const { addBooking, updateBooking, currentUser } = useStore()
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({
     carId: cars[0]?.id || '',
     userId: currentUser?.id || '',
     startDate: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : '',
@@ -86,18 +107,42 @@ function BookingModal({ isOpen, onClose, selectedDate, editBooking }) {
     purpose: '',
   })
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (editBooking) {
+      setFormData({
+        carId: editBooking.carId,
+        userId: editBooking.userId,
+        startDate: format(parseISO(editBooking.startDate), "yyyy-MM-dd'T'HH:mm"),
+        endDate: format(parseISO(editBooking.endDate), "yyyy-MM-dd'T'HH:mm"),
+        purpose: editBooking.purpose || '',
+      })
+    } else if (selectedDate) {
+      setFormData(prev => ({
+        ...prev,
+        carId: cars[0]?.id || '',
+        startDate: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
+        endDate: format(selectedDate, "yyyy-MM-dd'T'HH:mm"),
+      }))
+    }
+  }, [editBooking, selectedDate, cars])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSaving(true)
+    
     const bookingData = {
       ...formData,
       startDate: new Date(formData.startDate).toISOString(),
       endDate: new Date(formData.endDate).toISOString(),
     }
+    
     if (editBooking) {
-      updateBooking(editBooking.id, bookingData)
+      await updateBooking(editBooking.id, bookingData)
     } else {
-      addBooking(bookingData)
+      await addBooking(bookingData)
     }
+    
+    setIsSaving(false)
     onClose()
   }
 
@@ -129,28 +174,23 @@ function BookingModal({ isOpen, onClose, selectedDate, editBooking }) {
               className="w-full px-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               required
             >
-              {cars.map((car) => (
-                <option key={car.id} value={car.id}>
-                  {carImages[car.image]} {car.name} - {car.make} {car.model}
-                </option>
-              ))}
+              {cars.length === 0 ? (
+                <option value="">No vehicles available</option>
+              ) : (
+                cars.map((car) => (
+                  <option key={car.id} value={car.id}>
+                    {carImages[car.image]} {car.name} - {car.make} {car.model}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
           <div>
             <label className="block text-sm text-midnight-300 mb-2 font-medium">Driver</label>
-            <select
-              value={formData.userId}
-              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
-              required
-            >
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.avatar} {user.name}
-                </option>
-              ))}
-            </select>
+            <div className="px-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 text-white">
+              {profile?.full_name || 'You'}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -189,9 +229,17 @@ function BookingModal({ isOpen, onClose, selectedDate, editBooking }) {
 
           <button
             type="submit"
-            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-500"
+            disabled={isSaving || cars.length === 0}
+            className="btn-premium w-full py-4 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold uppercase tracking-wider shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-500 disabled:opacity-50"
           >
-            {editBooking ? 'Update Booking' : 'Create Booking'}
+            {isSaving ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              editBooking ? 'Update Booking' : 'Create Booking'
+            )}
           </button>
         </form>
       </div>
@@ -199,12 +247,16 @@ function BookingModal({ isOpen, onClose, selectedDate, editBooking }) {
   )
 }
 
-function DayCell({ date, currentMonth, bookings, cars, users, onDayClick }) {
+function DayCell({ date, currentMonth, bookings, cars, onDayClick, profile }) {
   const dayBookings = bookings.filter(booking => {
-    const start = parseISO(booking.startDate)
-    const end = parseISO(booking.endDate)
-    return isSameDay(date, start) || isSameDay(date, end) || 
-           isWithinInterval(date, { start, end })
+    try {
+      const start = parseISO(booking.startDate)
+      const end = parseISO(booking.endDate)
+      return isSameDay(date, start) || isSameDay(date, end) || 
+             isWithinInterval(date, { start, end })
+    } catch {
+      return false
+    }
   })
 
   const isCurrentMonth = isSameMonth(date, currentMonth)
@@ -225,15 +277,14 @@ function DayCell({ date, currentMonth, bookings, cars, users, onDayClick }) {
       <div className="space-y-1">
         {dayBookings.slice(0, 3).map((booking) => {
           const car = cars.find(c => c.id === booking.carId)
-          const user = users.find(u => u.id === booking.userId)
           return (
             <div
               key={booking.id}
               className="text-xs px-2 py-1 rounded-md truncate transition-all duration-300 hover:scale-105"
-              style={{ backgroundColor: user?.color + '30', borderLeft: `3px solid ${user?.color}` }}
-              title={`${car?.name} - ${user?.name}: ${booking.purpose || 'No purpose'}`}
+              style={{ backgroundColor: (profile?.color || '#3b82f6') + '30', borderLeft: `3px solid ${profile?.color || '#3b82f6'}` }}
+              title={`${car?.name} - ${booking.purpose || 'No purpose'}`}
             >
-              {carImages[car?.image]} {user?.name}
+              {carImages[car?.image]} {car?.name || 'Vehicle'}
             </div>
           )
         })}
@@ -248,11 +299,21 @@ function DayCell({ date, currentMonth, bookings, cars, users, onDayClick }) {
 }
 
 export default function BookingCalendar() {
-  const { bookings, cars, users, deleteBooking } = useStore()
+  const { user } = useAuth()
+  const { bookings, cars, profile, loading, deleteBooking, fetchBookings } = useStore()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedBooking, setSelectedBooking] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchBookings(user.id)
+    }
+  }, [user?.id, fetchBookings])
+
+  const isLoading = loading.bookings || loading.global
 
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth)
@@ -275,8 +336,20 @@ export default function BookingCalendar() {
     setModalOpen(true)
   }
 
+  const handleDeleteBooking = async (id) => {
+    setDeletingId(id)
+    await deleteBooking(id)
+    setDeletingId(null)
+  }
+
   const upcomingBookings = bookings
-    .filter(b => new Date(b.startDate) >= new Date())
+    .filter(b => {
+      try {
+        return new Date(b.startDate) >= new Date()
+      } catch {
+        return false
+      }
+    })
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
     .slice(0, 5)
 
@@ -289,7 +362,11 @@ export default function BookingCalendar() {
       <div className="flex items-center justify-between mb-6 animate-slideUpFade stagger-1">
         <div>
           <h3 className="font-display text-xl font-bold text-white">Schedule</h3>
-          <p className="text-sm text-midnight-400">{bookings.length} booking{bookings.length !== 1 ? 's' : ''} total</p>
+          {isLoading ? (
+            <div className="h-4 w-24 bg-midnight-700/50 rounded skeleton mt-1" />
+          ) : (
+            <p className="text-sm text-midnight-400">{bookings.length} booking{bookings.length !== 1 ? 's' : ''} total</p>
+          )}
         </div>
         <button
           onClick={() => {
@@ -336,32 +413,39 @@ export default function BookingCalendar() {
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 rounded-2xl overflow-hidden border border-midnight-700/30 bg-midnight-900/30">
-            {calendarDays.map((day, index) => (
-              <DayCell
-                key={index}
-                date={day}
-                currentMonth={currentMonth}
-                bookings={bookings}
-                cars={cars}
-                users={users}
-                onDayClick={handleDayClick}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Loading calendar...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-7 rounded-2xl overflow-hidden border border-midnight-700/30 bg-midnight-900/30">
+              {calendarDays.map((day, index) => (
+                <DayCell
+                  key={index}
+                  date={day}
+                  currentMonth={currentMonth}
+                  bookings={bookings}
+                  cars={cars}
+                  profile={profile}
+                  onDayClick={handleDayClick}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Legend */}
           <div className="flex flex-wrap items-center gap-4 mt-6 pt-6 border-t border-midnight-700/30">
             <span className="text-sm text-midnight-400 font-medium">Legend:</span>
-            {users.map((user) => (
-              <div key={user.id} className="flex items-center gap-2 animate-fadeIn">
-                <div 
-                  className="w-3 h-3 rounded-full shadow-lg"
-                  style={{ backgroundColor: user.color, boxShadow: `0 0 10px ${user.color}50` }}
-                />
-                <span className="text-sm text-midnight-300">{user.name}</span>
-              </div>
-            ))}
+            <div className="flex items-center gap-2 animate-fadeIn">
+              <div 
+                className="w-3 h-3 rounded-full shadow-lg"
+                style={{ backgroundColor: profile?.color || '#3b82f6', boxShadow: `0 0 10px ${profile?.color || '#3b82f6'}50` }}
+              />
+              <span className="text-sm text-midnight-300">{profile?.full_name || 'Your bookings'}</span>
+            </div>
           </div>
         </div>
 
@@ -373,10 +457,11 @@ export default function BookingCalendar() {
           </h3>
 
           <div className="space-y-3">
-            {upcomingBookings.length > 0 ? (
+            {isLoading ? (
+              [1, 2, 3].map((i) => <BookingSkeleton key={i} />)
+            ) : upcomingBookings.length > 0 ? (
               upcomingBookings.map((booking, index) => {
                 const car = cars.find(c => c.id === booking.carId)
-                const user = users.find(u => u.id === booking.userId)
                 return (
                   <div
                     key={booking.id}
@@ -386,19 +471,24 @@ export default function BookingCalendar() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{carImages[car?.image]}</span>
-                        <span className="text-sm font-semibold text-white">{car?.name}</span>
+                        <span className="text-sm font-semibold text-white">{car?.name || 'Vehicle'}</span>
                       </div>
                       <button
-                        onClick={() => deleteBooking(booking.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all duration-300"
+                        onClick={() => handleDeleteBooking(booking.id)}
+                        disabled={deletingId === booking.id}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all duration-300 disabled:opacity-50"
                       >
-                        <Trash2 className="w-4 h-4 text-red-400" />
+                        {deletingId === booking.id ? (
+                          <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-red-400" />
+                        )}
                       </button>
                     </div>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-xs text-midnight-400">
                         <User className="w-3 h-3" />
-                        <span style={{ color: user?.color }}>{user?.name}</span>
+                        <span style={{ color: profile?.color }}>{profile?.full_name || 'You'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-midnight-400">
                         <Calendar className="w-3 h-3" />
@@ -427,15 +517,35 @@ export default function BookingCalendar() {
             <h4 className="text-sm font-semibold text-midnight-300 mb-4">This Month</h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="glass-light rounded-xl p-4 text-center">
-                <p className="font-display text-2xl font-bold text-white">
-                  {bookings.filter(b => isSameMonth(parseISO(b.startDate), currentMonth)).length}
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-12 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+                ) : (
+                  <p className="font-display text-2xl font-bold text-white">
+                    {bookings.filter(b => {
+                      try {
+                        return isSameMonth(parseISO(b.startDate), currentMonth)
+                      } catch {
+                        return false
+                      }
+                    }).length}
+                  </p>
+                )}
                 <p className="text-xs text-midnight-400">Bookings</p>
               </div>
               <div className="glass-light rounded-xl p-4 text-center">
-                <p className="font-display text-2xl font-bold text-white">
-                  {[...new Set(bookings.filter(b => isSameMonth(parseISO(b.startDate), currentMonth)).map(b => b.carId))].length}
-                </p>
+                {isLoading ? (
+                  <div className="h-8 w-12 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+                ) : (
+                  <p className="font-display text-2xl font-bold text-white">
+                    {[...new Set(bookings.filter(b => {
+                      try {
+                        return isSameMonth(parseISO(b.startDate), currentMonth)
+                      } catch {
+                        return false
+                      }
+                    }).map(b => b.carId))].length}
+                  </p>
+                )}
                 <p className="text-xs text-midnight-400">Cars Used</p>
               </div>
             </div>
@@ -452,6 +562,8 @@ export default function BookingCalendar() {
         }}
         selectedDate={selectedDate}
         editBooking={selectedBooking}
+        cars={cars}
+        profile={profile}
       />
     </div>
   )
