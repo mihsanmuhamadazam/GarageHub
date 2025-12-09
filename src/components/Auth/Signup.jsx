@@ -30,12 +30,17 @@ export default function Signup({ onSwitchToLogin }) {
 
     setIsLoading(true)
 
+    console.log('Attempting signup with email:', email)
+    
     const { data, error } = await signUp(email, password, {
       full_name: name,
       avatar_initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
     })
 
+    console.log('Signup result:', { data, error })
+
     if (error) {
+      console.error('Signup error:', error)
       setError(error.message || 'Failed to create account')
       setIsLoading(false)
       return
@@ -43,7 +48,11 @@ export default function Signup({ onSwitchToLogin }) {
 
     // Check if email confirmation is required
     if (data?.user && !data?.session) {
+      console.log('User created, waiting for email confirmation:', data.user)
       setSuccess('Account created! Please check your email to confirm your account.')
+    } else if (data?.user && data?.session) {
+      console.log('User created and logged in:', data.user)
+      // User is already logged in, the app will redirect automatically
     }
     
     setIsLoading(false)
