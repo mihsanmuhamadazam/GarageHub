@@ -441,9 +441,11 @@ function AddCarModal({ isOpen, onClose, editCar, onSave }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSaving(true)
-    await onSave(formData)
+    const success = await onSave(formData)
     setIsSaving(false)
-    onClose()
+    if (success !== false) {
+      onClose()
+    }
   }
 
   if (!isOpen) return null
@@ -650,12 +652,20 @@ export default function KeyRack() {
   }
 
   const handleSave = async (carData) => {
+    let result
     if (editingCar) {
-      await updateCar(editingCar.id, carData)
+      result = await updateCar(editingCar.id, carData)
     } else {
-      await addCar(carData)
+      result = await addCar(carData)
     }
+    
+    if (result?.error) {
+      alert(`Error: ${result.error.message || 'Failed to save vehicle'}`)
+      return false
+    }
+    
     setEditingCar(null)
+    return true
   }
 
   const handleCloseModal = () => {
@@ -665,7 +675,10 @@ export default function KeyRack() {
 
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this vehicle?')) {
-      await deleteCar(id)
+      const result = await deleteCar(id)
+      if (result?.error) {
+        alert(`Error: ${result.error.message || 'Failed to delete vehicle'}`)
+      }
     }
   }
 

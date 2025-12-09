@@ -3,11 +3,20 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+console.log('Supabase config:', { 
+  url: supabaseUrl ? '✓ Set' : '✗ Missing', 
+  key: supabaseAnonKey ? '✓ Set' : '✗ Missing' 
+})
+
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
 
 export const supabase = isSupabaseConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
+
+if (!isSupabaseConfigured) {
+  console.warn('⚠️ Supabase is not configured. Database operations will not work.')
+}
 
 // Helper functions for database operations
 export const db = {
@@ -23,12 +32,19 @@ export const db = {
   },
 
   async createVehicle(vehicle) {
-    if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
+    if (!supabase) {
+      console.error('createVehicle: Supabase not configured')
+      return { data: null, error: { message: 'Supabase not configured' } }
+    }
+    console.log('db.createVehicle:', vehicle)
     const { data, error } = await supabase
       .from('vehicles')
       .insert([vehicle])
       .select()
       .single()
+    if (error) {
+      console.error('db.createVehicle error:', error)
+    }
     return { data, error }
   },
 

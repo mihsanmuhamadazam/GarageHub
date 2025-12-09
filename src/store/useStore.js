@@ -56,13 +56,18 @@ export const useStore = create((set, get) => ({
 
   // Initialize all data for a user
   initializeData: async (userId) => {
-    if (!userId) return
+    console.log('initializeData called with userId:', userId)
+    if (!userId) {
+      console.error('initializeData: No userId provided')
+      return
+    }
     
     set((state) => ({
       loading: { ...state.loading, global: true },
     }))
 
     try {
+      console.log('Fetching all data from Supabase...')
       // Fetch all data in parallel
       const [
         vehiclesRes,
@@ -85,6 +90,25 @@ export const useStore = create((set, get) => ({
         db.getSharedVehicles(userId),
         db.getProfile(userId),
       ])
+      
+      console.log('Data fetched:', {
+        vehicles: vehiclesRes.data?.length || 0,
+        bookings: bookingsRes.data?.length || 0,
+        services: servicesRes.data?.length || 0,
+        messages: messagesRes.data?.length || 0,
+        usageLog: usageLogRes.data?.length || 0,
+        connections: connectionsRes.data?.length || 0,
+        pending: pendingRes.data?.length || 0,
+        shared: sharedRes.data?.length || 0,
+        profile: profileRes.data ? 'exists' : 'missing',
+      })
+      
+      // Log any errors
+      if (vehiclesRes.error) console.error('Vehicles fetch error:', vehiclesRes.error)
+      if (bookingsRes.error) console.error('Bookings fetch error:', bookingsRes.error)
+      if (servicesRes.error) console.error('Services fetch error:', servicesRes.error)
+      if (messagesRes.error) console.error('Messages fetch error:', messagesRes.error)
+      if (profileRes.error) console.error('Profile fetch error:', profileRes.error)
 
       set({
         vehicles: vehiclesRes.data || [],
@@ -176,7 +200,12 @@ export const useStore = create((set, get) => ({
 
   addCar: async (car) => {
     const userId = get().currentUser?.id
-    if (!userId) return
+    console.log('addCar called, userId:', userId)
+    
+    if (!userId) {
+      console.error('Cannot add car: No user ID found')
+      return { error: { message: 'Not logged in' } }
+    }
 
     set((state) => ({ loading: { ...state.loading, vehicles: true } }))
     
@@ -195,22 +224,29 @@ export const useStore = create((set, get) => ({
       image: car.image || 'sedan',
     }
 
+    console.log('Creating vehicle with data:', vehicleData)
     const { data, error } = await db.createVehicle(vehicleData)
+    console.log('Create vehicle result:', { data, error })
     
     if (data) {
       set((state) => ({
         vehicles: [data, ...state.vehicles],
         loading: { ...state.loading, vehicles: false },
       }))
+      return { data }
     } else {
+      console.error('Failed to create vehicle:', error)
       set((state) => ({
         loading: { ...state.loading, vehicles: false },
         errors: { ...state.errors, vehicles: error },
       }))
+      return { error }
     }
   },
 
   updateCar: async (id, updates) => {
+    console.log('updateCar called:', { id, updates })
+    
     const dbUpdates = {
       name: updates.name,
       make: updates.make,
@@ -231,6 +267,7 @@ export const useStore = create((set, get) => ({
     )
 
     const { data, error } = await db.updateVehicle(id, dbUpdates)
+    console.log('Update vehicle result:', { data, error })
     
     if (data) {
       set((state) => ({
@@ -238,23 +275,36 @@ export const useStore = create((set, get) => ({
           v.id === id ? data : v
         ),
       }))
+      return { data }
+    } else {
+      console.error('Failed to update vehicle:', error)
+      return { error }
     }
   },
 
   deleteCar: async (id) => {
+    console.log('deleteCar called:', id)
     const { error } = await db.deleteVehicle(id)
+    console.log('Delete vehicle result:', { error })
+    
     if (!error) {
       set((state) => ({
         vehicles: state.vehicles.filter((v) => v.id !== id),
       }))
+      return { success: true }
+    } else {
+      console.error('Failed to delete vehicle:', error)
+      return { error }
     }
   },
 
   toggleCarStatus: async (id, status, driver = null) => {
+    console.log('toggleCarStatus called:', { id, status, driver })
     const { data, error } = await db.updateVehicle(id, {
       status,
       current_driver: driver,
     })
+    console.log('Toggle status result:', { data, error })
     
     if (data) {
       set((state) => ({
@@ -262,6 +312,10 @@ export const useStore = create((set, get) => ({
           v.id === id ? data : v
         ),
       }))
+      return { data }
+    } else {
+      console.error('Failed to toggle vehicle status:', error)
+      return { error }
     }
   },
 
@@ -285,7 +339,12 @@ export const useStore = create((set, get) => ({
 
   addBooking: async (booking) => {
     const userId = get().currentUser?.id
-    if (!userId) return
+    console.log('addBooking called, userId:', userId)
+    
+    if (!userId) {
+      console.error('Cannot add booking: No user ID found')
+      return { error: { message: 'Not logged in' } }
+    }
 
     const bookingData = {
       user_id: userId,
@@ -295,7 +354,9 @@ export const useStore = create((set, get) => ({
       purpose: booking.purpose,
     }
 
+    console.log('Creating booking with data:', bookingData)
     const { data, error } = await db.createBooking(bookingData)
+    console.log('Create booking result:', { data, error })
     
     if (data) {
       set((state) => ({
@@ -308,6 +369,10 @@ export const useStore = create((set, get) => ({
           purpose: data.purpose,
         }],
       }))
+      return { data }
+    } else {
+      console.error('Failed to create booking:', error)
+      return { error }
     }
   },
 
@@ -372,7 +437,12 @@ export const useStore = create((set, get) => ({
 
   addService: async (service) => {
     const userId = get().currentUser?.id
-    if (!userId) return
+    console.log('addService called, userId:', userId)
+    
+    if (!userId) {
+      console.error('Cannot add service: No user ID found')
+      return { error: { message: 'Not logged in' } }
+    }
 
     const serviceData = {
       user_id: userId,
@@ -385,10 +455,12 @@ export const useStore = create((set, get) => ({
       next_due: service.nextDue,
     }
 
+    console.log('Creating service with data:', serviceData)
     const { data, error } = await db.createService(serviceData)
+    console.log('Create service result:', { data, error })
     
     if (data) {
-        set((state) => ({
+      set((state) => ({
         services: [...state.services, {
           id: data.id,
           carId: data.vehicle_id,
@@ -400,6 +472,10 @@ export const useStore = create((set, get) => ({
           nextDue: data.next_due,
         }],
       }))
+      return { data }
+    } else {
+      console.error('Failed to create service:', error)
+      return { error }
     }
   },
 
@@ -467,7 +543,12 @@ export const useStore = create((set, get) => ({
 
   addMessage: async (message) => {
     const userId = get().currentUser?.id
-    if (!userId) return
+    console.log('addMessage called, userId:', userId)
+    
+    if (!userId) {
+      console.error('Cannot add message: No user ID found')
+      return { error: { message: 'Not logged in' } }
+    }
 
     const messageData = {
       user_id: userId,
@@ -476,10 +557,12 @@ export const useStore = create((set, get) => ({
       type: message.type || 'note',
     }
 
+    console.log('Creating message with data:', messageData)
     const { data, error } = await db.createMessage(messageData)
+    console.log('Create message result:', { data, error })
     
     if (data) {
-        set((state) => ({
+      set((state) => ({
         messages: [...state.messages, {
           id: data.id,
           carId: data.vehicle_id,
@@ -489,6 +572,10 @@ export const useStore = create((set, get) => ({
           timestamp: data.created_at,
         }],
       }))
+      return { data }
+    } else {
+      console.error('Failed to create message:', error)
+      return { error }
     }
   },
 
@@ -521,7 +608,12 @@ export const useStore = create((set, get) => ({
 
   addUsageLog: async (log) => {
     const userId = get().currentUser?.id
-    if (!userId) return
+    console.log('addUsageLog called, userId:', userId)
+    
+    if (!userId) {
+      console.error('Cannot add usage log: No user ID found')
+      return { error: { message: 'Not logged in' } }
+    }
 
     const logData = {
       user_id: userId,
@@ -531,10 +623,12 @@ export const useStore = create((set, get) => ({
       duration: log.duration || 0,
     }
 
+    console.log('Creating usage log with data:', logData)
     const { data, error } = await db.createUsageLog(logData)
+    console.log('Create usage log result:', { data, error })
     
     if (data) {
-        set((state) => ({
+      set((state) => ({
         usageLog: [...state.usageLog, {
           id: data.id,
           carId: data.vehicle_id,
@@ -544,6 +638,10 @@ export const useStore = create((set, get) => ({
           duration: data.duration,
         }],
       }))
+      return { data }
+    } else {
+      console.error('Failed to create usage log:', error)
+      return { error }
     }
   },
 
