@@ -417,11 +417,27 @@ function ServiceCard({ service, car, onEdit, onDelete, index, isDeleting }) {
 
 export default function ServiceTracker() {
   const { user } = useAuth()
-  const { services, cars, loading, deleteService, fetchServices } = useStore()
+  const { services, vehicles, loading, deleteService, fetchServices } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingService, setEditingService] = useState(null)
   const [selectedCarId, setSelectedCarId] = useState('all')
   const [deletingId, setDeletingId] = useState(null)
+
+  // Transform vehicles to cars format
+  const cars = vehicles.map(v => ({
+    id: v.id,
+    name: v.name,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    plate: v.plate,
+    color: v.color,
+    status: v.status,
+    currentDriver: v.current_driver,
+    mileage: v.mileage,
+    fuelLevel: v.fuel_level,
+    image: v.image,
+  }))
 
   useEffect(() => {
     if (user?.id) {

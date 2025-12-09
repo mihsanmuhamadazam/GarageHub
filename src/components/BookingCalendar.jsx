@@ -300,12 +300,28 @@ function DayCell({ date, currentMonth, bookings, cars, onDayClick, profile }) {
 
 export default function BookingCalendar() {
   const { user } = useAuth()
-  const { bookings, cars, profile, loading, deleteBooking, fetchBookings } = useStore()
+  const { bookings, vehicles, profile, loading, deleteBooking, fetchBookings } = useStore()
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+
+  // Transform vehicles to cars format
+  const cars = vehicles.map(v => ({
+    id: v.id,
+    name: v.name,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    plate: v.plate,
+    color: v.color,
+    status: v.status,
+    currentDriver: v.current_driver,
+    mileage: v.mileage,
+    fuelLevel: v.fuel_level,
+    image: v.image,
+  }))
 
   useEffect(() => {
     if (user?.id) {

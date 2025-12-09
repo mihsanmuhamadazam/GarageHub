@@ -183,8 +183,24 @@ function EmptyState({ icon: Icon, title, description }) {
 
 export default function Analytics() {
   const { user } = useAuth()
-  const { usageLog, cars, users, services, profile, loading, fetchUsageLog } = useStore()
+  const { usageLog, vehicles, users, services, profile, loading, fetchUsageLog } = useStore()
   const [timeRange, setTimeRange] = useState('week')
+
+  // Transform vehicles to cars format
+  const cars = vehicles.map(v => ({
+    id: v.id,
+    name: v.name,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    plate: v.plate,
+    color: v.color,
+    status: v.status,
+    currentDriver: v.current_driver,
+    mileage: v.mileage,
+    fuelLevel: v.fuel_level,
+    image: v.image,
+  }))
 
   useEffect(() => {
     if (user?.id) {

@@ -221,7 +221,7 @@ function CarSelector({ cars, selectedCarId, onSelect, loading }) {
 
 export default function CarChat() {
   const { user } = useAuth()
-  const { messages, cars, profile, loading, addMessage, deleteMessage, fetchMessages } = useStore()
+  const { messages, vehicles, profile, loading, addMessage, deleteMessage, fetchMessages } = useStore()
   const [selectedCarId, setSelectedCarId] = useState('')
   const [newMessage, setNewMessage] = useState('')
   const [messageType, setMessageType] = useState('note')
@@ -229,6 +229,22 @@ export default function CarChat() {
   const [isSending, setIsSending] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const messagesEndRef = useRef(null)
+
+  // Transform vehicles to cars format
+  const cars = vehicles.map(v => ({
+    id: v.id,
+    name: v.name,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    plate: v.plate,
+    color: v.color,
+    status: v.status,
+    currentDriver: v.current_driver,
+    mileage: v.mileage,
+    fuelLevel: v.fuel_level,
+    image: v.image,
+  }))
 
   useEffect(() => {
     if (user?.id) {

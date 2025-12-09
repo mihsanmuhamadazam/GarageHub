@@ -627,7 +627,6 @@ function EmptyState({ onAdd }) {
 export default function KeyRack() {
   const { user } = useAuth()
   const { 
-    cars, 
     vehicles,
     loading,
     addCar, 
@@ -638,6 +637,22 @@ export default function KeyRack() {
   } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCar, setEditingCar] = useState(null)
+
+  // Transform vehicles to cars format (with proper field mapping)
+  const cars = vehicles.map(v => ({
+    id: v.id,
+    name: v.name,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    plate: v.plate,
+    color: v.color,
+    status: v.status,
+    currentDriver: v.current_driver,
+    mileage: v.mileage,
+    fuelLevel: v.fuel_level,
+    image: v.image,
+  }))
 
   // Fetch vehicles when component mounts or user changes
   useEffect(() => {
