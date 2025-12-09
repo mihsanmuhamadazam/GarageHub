@@ -628,14 +628,14 @@ export default function KeyRack() {
   const { user } = useAuth()
   const { 
     vehicles,
-    sharedVehicles,
+    connectedUsersVehicles,
     loading,
     addCar, 
     updateCar, 
     deleteCar, 
     toggleCarStatus,
     fetchVehicles,
-    fetchSharedVehicles,
+    fetchConnectedUsersVehicles,
   } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCar, setEditingCar] = useState(null)
@@ -660,9 +660,9 @@ export default function KeyRack() {
   useEffect(() => {
     if (user?.id) {
       fetchVehicles(user.id)
-      fetchSharedVehicles(user.id)
+      fetchConnectedUsersVehicles(user.id)
     }
-  }, [user?.id, fetchVehicles, fetchSharedVehicles])
+  }, [user?.id, fetchVehicles, fetchConnectedUsersVehicles])
 
   const handleEdit = (car) => {
     setEditingCar(car)
@@ -771,24 +771,24 @@ export default function KeyRack() {
         onSave={handleSave}
       />
 
-      {/* Shared Vehicles Section */}
-      {sharedVehicles && sharedVehicles.length > 0 && (
+      {/* Connected Users' Vehicles Section */}
+      {connectedUsersVehicles && connectedUsersVehicles.length > 0 && (
         <div className="mt-12">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-display text-xl font-bold text-white">Shared With You</h3>
-              <p className="text-sm text-midnight-400">{sharedVehicles.length} vehicle{sharedVehicles.length !== 1 ? 's' : ''} shared by connections</p>
+              <h3 className="font-display text-xl font-bold text-white">From Your Connections</h3>
+              <p className="text-sm text-midnight-400">{connectedUsersVehicles.length} vehicle{connectedUsersVehicles.length !== 1 ? 's' : ''} from connected users</p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sharedVehicles.map((share, index) => (
-              <SharedCarCard 
-                key={share.id}
-                share={share} 
+            {connectedUsersVehicles.map((vehicle, index) => (
+              <ConnectedUserCarCard 
+                key={vehicle.id}
+                vehicle={vehicle} 
                 index={index}
               />
             ))}
@@ -799,10 +799,9 @@ export default function KeyRack() {
   )
 }
 
-// Shared Car Card Component
-function SharedCarCard({ share, index }) {
-  const vehicle = share.vehicle
-  const sharedBy = share.shared_by_profile
+// Connected User Car Card Component - Shows vehicles from connected users
+function ConnectedUserCarCard({ vehicle, index }) {
+  const owner = vehicle.owner
   
   if (!vehicle) return null
   
@@ -869,21 +868,21 @@ function SharedCarCard({ share, index }) {
         </div>
       </div>
 
-      {/* Shared By */}
-      {sharedBy && (
+      {/* Owner Info */}
+      {owner && (
         <div className="flex items-center gap-3 pt-4 border-t border-midnight-700/50">
           <div 
             className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
             style={{ 
-              backgroundColor: (sharedBy.color || '#3b82f6') + '30', 
-              color: sharedBy.color || '#3b82f6' 
+              backgroundColor: (owner.color || '#3b82f6') + '30', 
+              color: owner.color || '#3b82f6' 
             }}
           >
-            {sharedBy.avatar_initials || '??'}
+            {owner.avatar_initials || '??'}
           </div>
           <div>
-            <p className="text-sm text-white font-medium">Shared by {sharedBy.full_name}</p>
-            <p className="text-xs text-midnight-500">You can view this vehicle</p>
+            <p className="text-sm text-white font-medium">{owner.full_name}'s vehicle</p>
+            <p className="text-xs text-midnight-500">Connected user</p>
           </div>
         </div>
       )}

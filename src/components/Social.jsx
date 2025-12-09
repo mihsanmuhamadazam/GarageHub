@@ -314,7 +314,7 @@ function PendingRequestCard({ request, onAccept, onReject, isProcessing }) {
 }
 
 // Connection Card with actions
-function ConnectionCard({ connection, onRemove, onMessage, onShareVehicle, isRemoving }) {
+function ConnectionCard({ connection, onRemove, onMessage, isRemoving }) {
   const connectedUser = connection.connected_user
   
   return (
@@ -336,17 +336,10 @@ function ConnectionCard({ connection, onRemove, onMessage, onShareVehicle, isRem
           </h4>
           <p className="text-sm text-void-400 flex items-center gap-2">
             <CheckCircle className="w-3.5 h-3.5 text-success-400" />
-            Connected
+            Connected · Vehicles shared automatically
           </p>
         </div>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button
-            onClick={() => onShareVehicle(connectedUser)}
-            className="p-2.5 rounded-xl bg-neon-500/20 border border-neon-500/30 text-neon-400 hover:bg-neon-500/30 hover:scale-105 transition-all duration-300"
-            title="Share a vehicle"
-          >
-            <Car className="w-5 h-5" />
-          </button>
           <button
             onClick={() => onMessage(connectedUser)}
             className="p-2.5 rounded-xl bg-electric-500/20 border border-electric-500/30 text-electric-400 hover:bg-electric-500/30 hover:scale-105 transition-all duration-300"
@@ -431,170 +424,35 @@ function SocialStats({ connections, pendingRequests, sharedVehicles, loading }) 
 }
 
 // Vehicle Share Modal
-function VehicleShareModal({ isOpen, onClose, targetUser, vehicles, onShare }) {
-  const [selectedVehicle, setSelectedVehicle] = useState(null)
-  const [isSharing, setIsSharing] = useState(false)
-  const [shareResult, setShareResult] = useState(null)
-
-  if (!isOpen) return null
-
-  const handleShare = async () => {
-    if (!selectedVehicle) return
-    setIsSharing(true)
-    setShareResult(null)
-    
-    const result = await onShare(selectedVehicle, targetUser.id)
-    setIsSharing(false)
-    
-    if (result.success) {
-      setShareResult({ type: 'success', message: 'Vehicle shared successfully!' })
-      setTimeout(() => {
-        setShareResult(null)
-        setSelectedVehicle(null)
-        onClose()
-      }, 1500)
-    } else if (result.error) {
-      setShareResult({ type: 'error', message: result.error })
-    }
-  }
-  
-  const handleClose = () => {
-    setSelectedVehicle(null)
-    setShareResult(null)
-    onClose()
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-void-950/80 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative w-full max-w-md card p-6 animate-scale-in">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-neon flex items-center justify-center">
-              <Car className="w-5 h-5 text-void-900" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-white">Share Vehicle</h3>
-              <p className="text-sm text-void-400">with {targetUser?.full_name}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-2 rounded-lg hover:bg-void-700 transition-colors"
-          >
-            <X className="w-5 h-5 text-void-400" />
-          </button>
-        </div>
-
-        {/* Success/Error Message */}
-        {shareResult && (
-          <div className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
-            shareResult.type === 'success' 
-              ? 'bg-success-500/10 border border-success-500/30' 
-              : 'bg-coral-500/10 border border-coral-500/30'
-          }`}>
-            {shareResult.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-success-400 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-5 h-5 text-coral-400 flex-shrink-0" />
-            )}
-            <p className={`text-sm ${shareResult.type === 'success' ? 'text-success-400' : 'text-coral-400'}`}>
-              {shareResult.message}
-            </p>
-          </div>
-        )}
-
-        {vehicles.length > 0 ? (
-          <>
-            <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-              {vehicles.map((vehicle) => (
-                <button
-                  key={vehicle.id}
-                  onClick={() => setSelectedVehicle(vehicle.id)}
-                  className={`w-full p-4 rounded-xl border transition-all duration-300 text-left ${
-                    selectedVehicle === vehicle.id
-                      ? 'bg-neon-500/10 border-neon-500/50'
-                      : 'bg-void-800/50 border-void-700 hover:border-void-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: vehicle.color + '30' }}
-                    >
-                      <Car className="w-5 h-5" style={{ color: vehicle.color }} />
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">{vehicle.name}</p>
-                      <p className="text-sm text-void-400">{vehicle.make} {vehicle.model}</p>
-                    </div>
-                    {selectedVehicle === vehicle.id && (
-                      <CheckCircle className="w-5 h-5 text-neon-400 ml-auto" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={handleShare}
-              disabled={!selectedVehicle || isSharing}
-              className="w-full btn-primary py-3 rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSharing ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Sharing...
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-5 h-5" />
-                  Share Vehicle
-                </>
-              )}
-            </button>
-          </>
-        ) : (
-          <div className="text-center py-8">
-            <Car className="w-12 h-12 text-void-600 mx-auto mb-3" />
-            <p className="text-void-400">No vehicles to share</p>
-            <p className="text-sm text-void-500">Add a vehicle first to share it</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // Main Social Component
 export default function Social() {
   const { user } = useAuth()
   const {
     profile,
     vehicles,
+    connectedUsersVehicles,
     connections,
     pendingConnections,
-    sharedVehicles,
     loading,
     fetchConnections,
+    fetchConnectedUsersVehicles,
     sendConnectionRequest,
     acceptConnection,
     rejectConnection,
     removeConnection,
-    shareVehicle,
   } = useStore()
   
   const [copied, setCopied] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [processingId, setProcessingId] = useState(null)
-  const [shareModalOpen, setShareModalOpen] = useState(false)
-  const [shareTargetUser, setShareTargetUser] = useState(null)
   
   // Fetch connections on mount and when user changes
   useEffect(() => {
     if (user?.id) {
       fetchConnections(user.id)
+      fetchConnectedUsersVehicles(user.id)
     }
-  }, [user?.id, fetchConnections])
+  }, [user?.id, fetchConnections, fetchConnectedUsersVehicles])
   
   // Handle URL connection code
   useEffect(() => {
@@ -651,20 +509,6 @@ export default function Social() {
     // TODO: Navigate to messages with this user
     console.log('Message user:', targetUser)
   }
-
-  const handleOpenShareModal = (targetUser) => {
-    setShareTargetUser(targetUser)
-    setShareModalOpen(true)
-  }
-
-  const handleShareVehicle = async (vehicleId, targetUserId) => {
-    const result = await shareVehicle(vehicleId, targetUserId)
-    if (result.success) {
-      // Refresh shared vehicles for the target user (they'll see it when they load)
-      // Show success feedback is handled in the modal
-    }
-    return result
-  }
   
   const isLoading = loading.connections || loading.global
   
@@ -677,7 +521,7 @@ export default function Social() {
       <SocialStats 
         connections={connections.length}
         pendingRequests={pendingConnections.length}
-        sharedVehicles={sharedVehicles.length}
+        sharedVehicles={connectedUsersVehicles.length}
         loading={isLoading}
       />
       
@@ -759,7 +603,6 @@ export default function Social() {
                 connection={connection}
                 onRemove={handleRemove}
                 onMessage={handleMessage}
-                onShareVehicle={handleOpenShareModal}
                 isRemoving={processingId === connection.id}
               />
             ))}
@@ -791,45 +634,33 @@ export default function Social() {
         )}
       </div>
 
-      {/* Shared Vehicles Section */}
-      {sharedVehicles.length > 0 && (
+      {/* Connected Users' Vehicles Section */}
+      {connectedUsersVehicles.length > 0 && (
         <div className="mt-8 animate-slideUpFade stagger-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-electric-500/20 flex items-center justify-center">
               <Car className="w-5 h-5 text-electric-400" />
             </div>
             <div>
-              <h3 className="font-display text-xl font-bold text-white">Shared With You</h3>
-              <p className="text-sm text-void-400">{sharedVehicles.length} vehicles shared by connections</p>
+              <h3 className="font-display text-xl font-bold text-white">Vehicles From Connections</h3>
+              <p className="text-sm text-void-400">{connectedUsersVehicles.length} vehicles from your connected users</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sharedVehicles.map((share) => (
-              <SharedVehicleCard key={share.id} share={share} />
+            {connectedUsersVehicles.map((vehicle) => (
+              <ConnectedVehicleCard key={vehicle.id} vehicle={vehicle} />
             ))}
           </div>
         </div>
       )}
-
-      {/* Vehicle Share Modal */}
-      <VehicleShareModal
-        isOpen={shareModalOpen}
-        onClose={() => {
-          setShareModalOpen(false)
-          setShareTargetUser(null)
-        }}
-        targetUser={shareTargetUser}
-        vehicles={vehicles}
-        onShare={handleShareVehicle}
-      />
     </div>
   )
 }
 
 // Shared Vehicle Card Component
-function SharedVehicleCard({ share }) {
-  const vehicle = share.vehicle
-  const sharedBy = share.shared_by_profile
+// Connected Vehicle Card - Shows vehicle from a connected user (automatic sharing)
+function ConnectedVehicleCard({ vehicle }) {
+  const owner = vehicle.owner
   
   if (!vehicle) return null
   
@@ -875,16 +706,16 @@ function SharedVehicleCard({ share }) {
         </div>
       </div>
       
-      {sharedBy && (
+      {owner && (
         <div className="flex items-center gap-2 pt-3 border-t border-void-700">
           <div 
             className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: (sharedBy.color || '#00e5c9') + '30', color: sharedBy.color || '#00e5c9' }}
+            style={{ backgroundColor: (owner.color || '#00e5c9') + '30', color: owner.color || '#00e5c9' }}
           >
-            {sharedBy.avatar_initials || '??'}
+            {owner.avatar_initials || '??'}
           </div>
           <p className="text-xs text-void-400">
-            Shared by <span className="text-void-300 font-medium">{sharedBy.full_name}</span>
+            Owned by <span className="text-void-300 font-medium">{owner.full_name}</span>
           </p>
         </div>
       )}

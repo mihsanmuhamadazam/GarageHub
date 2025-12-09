@@ -4,6 +4,7 @@ import { db, supabase } from '../lib/supabase'
 export const useStore = create((set, get) => ({
   // Data State - No more fake data, all from Supabase
   vehicles: [],
+  connectedUsersVehicles: [], // Vehicles from connected users (automatic)
   bookings: [],
   services: [],
   messages: [],
@@ -76,6 +77,7 @@ export const useStore = create((set, get) => ({
       // Fetch all data in parallel
       const [
         vehiclesRes,
+        connectedVehiclesRes,
         bookingsRes,
         servicesRes,
         messagesRes,
@@ -85,6 +87,7 @@ export const useStore = create((set, get) => ({
         sharedRes,
       ] = await Promise.all([
         db.getVehicles(userId),
+        db.getConnectedUsersVehicles(userId),
         db.getBookings(userId),
         db.getServices(userId),
         db.getMessages(userId),
@@ -109,6 +112,7 @@ export const useStore = create((set, get) => ({
       
       console.log('Data fetched:', {
         vehicles: vehiclesRes.data?.length || 0,
+        connectedVehicles: connectedVehiclesRes.data?.length || 0,
         bookings: bookingsRes.data?.length || 0,
         services: servicesRes.data?.length || 0,
         messages: messagesRes.data?.length || 0,
@@ -121,6 +125,7 @@ export const useStore = create((set, get) => ({
       
       // Log any errors
       if (vehiclesRes.error) console.error('Vehicles fetch error:', vehiclesRes.error)
+      if (connectedVehiclesRes.error) console.error('Connected vehicles fetch error:', connectedVehiclesRes.error)
       if (bookingsRes.error) console.error('Bookings fetch error:', bookingsRes.error)
       if (servicesRes.error) console.error('Services fetch error:', servicesRes.error)
       if (messagesRes.error) console.error('Messages fetch error:', messagesRes.error)
@@ -128,6 +133,7 @@ export const useStore = create((set, get) => ({
 
       set({
         vehicles: vehiclesRes.data || [],
+        connectedUsersVehicles: connectedVehiclesRes.data || [],
         bookings: (bookingsRes.data || []).map(b => ({
           id: b.id,
           carId: b.vehicle_id,
@@ -212,6 +218,15 @@ export const useStore = create((set, get) => ({
       loading: { ...get().loading, vehicles: false },
       errors: { ...get().errors, vehicles: error },
     })
+  },
+
+  // Fetch vehicles from connected users (automatic sharing)
+  fetchConnectedUsersVehicles: async (userId) => {
+    const { data, error } = await db.getConnectedUsersVehicles(userId)
+    if (data) {
+      set({ connectedUsersVehicles: data })
+    }
+    return { data, error }
   },
 
   addCar: async (car) => {
@@ -736,12 +751,21 @@ export const useStore = create((set, get) => ({
   },
 
   acceptConnection: async (connectionId) => {
+    const userId = get().currentUser?.id
     const { data, error } = await db.updateConnection(connectionId, 'accepted')
     if (data) {
-        set((state) => ({
+      set((state) => ({
         pendingConnections: state.pendingConnections.filter(c => c.id !== connectionId),
         connections: [...state.connections, data],
       }))
+      
+      // Refresh connected users' vehicles after accepting connection
+      if (userId) {
+        const { data: connectedVehicles } = await db.getConnectedUsersVehicles(userId)
+        if (connectedVehicles) {
+          set({ connectedUsersVehicles: connectedVehicles })
+        }
+      }
     }
     return { data, error }
   },
@@ -888,6 +912,7 @@ export const useStore = create((set, get) => ({
   clearData: () => {
     set({
       vehicles: [],
+      connectedUsersVehicles: [],
       bookings: [],
       services: [],
       messages: [],

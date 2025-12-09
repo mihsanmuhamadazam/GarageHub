@@ -20,7 +20,7 @@ if (!isSupabaseConfigured) {
 
 // Helper functions for database operations
 export const db = {
-  // Vehicles
+  // Vehicles - Get user's own vehicles
   async getVehicles(userId) {
     if (!supabase) return { data: [], error: null }
     const { data, error } = await supabase
@@ -29,6 +29,60 @@ export const db = {
       .eq('owner_id', userId)
       .order('created_at', { ascending: false })
     return { data: data || [], error }
+  },
+
+  // Get vehicles from connected users (automatic sharing)
+  async getConnectedUsersVehicles(userId) {
+    if (!supabase) return { data: [], error: null }
+    
+    // First get all accepted connections (bidirectional)
+    const { data: sentConnections } = await supabase
+      .from('connections')
+      .select('connected_user_id')
+      .eq('user_id', userId)
+      .eq('status', 'accepted')
+    
+    const { data: receivedConnections } = await supabase
+      .from('connections')
+      .select('user_id')
+      .eq('connected_user_id', userId)
+      .eq('status', 'accepted')
+    
+    // Get all connected user IDs
+    const connectedUserIds = [
+      ...(sentConnections || []).map(c => c.connected_user_id),
+      ...(receivedConnections || []).map(c => c.user_id)
+    ]
+    
+    if (connectedUserIds.length === 0) {
+      return { data: [], error: null }
+    }
+    
+    // Get vehicles from all connected users
+    const { data: vehicles, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .in('owner_id', connectedUserIds)
+      .order('created_at', { ascending: false })
+    
+    if (error || !vehicles?.length) {
+      return { data: [], error }
+    }
+    
+    // Get profiles of vehicle owners
+    const ownerIds = [...new Set(vehicles.map(v => v.owner_id))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', ownerIds)
+    
+    // Enrich vehicles with owner info
+    const enrichedVehicles = vehicles.map(vehicle => ({
+      ...vehicle,
+      owner: profiles?.find(p => p.id === vehicle.owner_id) || null
+    }))
+    
+    return { data: enrichedVehicles, error: null }
   },
 
   async createVehicle(vehicle) {
