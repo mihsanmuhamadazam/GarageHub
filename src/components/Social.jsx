@@ -19,7 +19,11 @@ import {
   Car,
   Send,
   Search,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  Globe,
+  Shield,
+  RefreshCw
 } from 'lucide-react'
 import { useStore } from '../store/useStore'
 import { useAuth } from '../contexts/AuthContext'
@@ -27,60 +31,79 @@ import { useAuth } from '../contexts/AuthContext'
 // Loading Skeleton
 function ConnectionSkeleton() {
   return (
-    <div className="glass-light rounded-2xl p-5 animate-pulse">
+    <div className="card p-5 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-midnight-700/50 skeleton" />
+        <div className="w-14 h-14 rounded-2xl bg-void-700/50 skeleton" />
         <div className="flex-1">
-          <div className="h-5 w-32 bg-midnight-700/50 rounded skeleton mb-2" />
-          <div className="h-4 w-24 bg-midnight-700/50 rounded skeleton" />
+          <div className="h-5 w-32 bg-void-700/50 rounded skeleton mb-2" />
+          <div className="h-4 w-24 bg-void-700/50 rounded skeleton" />
         </div>
-        <div className="h-10 w-24 bg-midnight-700/50 rounded-xl skeleton" />
+        <div className="h-10 w-24 bg-void-700/50 rounded-xl skeleton" />
       </div>
     </div>
   )
 }
 
-// Hero Section
+// Hero Section with animated background
 function SocialHero() {
   return (
-    <div className="relative overflow-hidden rounded-3xl glass-card p-8 mb-8 animate-slideUpFade">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-pink-500/10 rounded-full blur-3xl animate-float-slow" />
+    <div className="relative overflow-hidden rounded-3xl glass-card p-8 lg:p-10 mb-8 animate-slideUpFade">
+      {/* Animated orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="orb orb-neon w-80 h-80 -top-20 -right-20" />
+        <div className="orb orb-electric w-60 h-60 -bottom-20 -left-20" style={{ animationDelay: '2s' }} />
+        <div className="orb orb-coral w-40 h-40 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '4s' }} />
       </div>
       
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center gap-1.5">
-              <Heart className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-xs font-medium text-purple-400">Social Hub</span>
+      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-neon-500/10 border border-neon-500/30">
+            <Zap className="w-4 h-4 text-neon-500" />
+            <span className="text-sm font-medium text-neon-400">Social Hub</span>
+          </div>
+          <h2 className="font-display text-4xl lg:text-5xl font-bold text-white mb-4">
+            Connect &{' '}
+            <span className="text-gradient">Share</span>
+          </h2>
+          <p className="text-void-300 text-lg max-w-md">
+            Invite friends and family to your garage. Share vehicles and coordinate trips together in real-time.
+          </p>
+          
+          {/* Quick stats */}
+          <div className="flex items-center justify-center lg:justify-start gap-6 mt-6">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-success-400" />
+              <span className="text-sm text-void-300">Secure Sharing</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-electric-400" />
+              <span className="text-sm text-void-300">Instant Connect</span>
             </div>
           </div>
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-3">
-            Connect &{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Share</span>
-          </h2>
-          <p className="text-midnight-300 text-lg max-w-md">
-            Invite friends and family to your garage. Share vehicles and coordinate trips together.
-          </p>
         </div>
         
         <div className="relative">
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-purple-500/20 via-transparent to-pink-500/20 flex items-center justify-center animate-float">
-            <Users className="w-20 h-20 text-purple-400/50" />
+          <div className="w-40 h-40 lg:w-56 lg:h-56 rounded-full bg-gradient-to-br from-neon-500/20 via-transparent to-electric-500/20 flex items-center justify-center animate-float">
+            <div className="w-32 h-32 lg:w-44 lg:h-44 rounded-full bg-void-800/50 backdrop-blur-sm border border-white/5 flex items-center justify-center">
+              <Users className="w-16 h-16 lg:w-20 lg:h-20 text-neon-400/60" />
+            </div>
           </div>
+          {/* Floating particles */}
+          <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-neon-400 animate-float" style={{ animationDelay: '0.5s' }} />
+          <div className="absolute bottom-4 left-0 w-3 h-3 rounded-full bg-electric-400 animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 right-0 w-2 h-2 rounded-full bg-coral-400 animate-float" style={{ animationDelay: '1.5s' }} />
         </div>
       </div>
     </div>
   )
 }
 
-// Share Code Card
-function ShareCodeCard({ shareCode, onCopy, copied }) {
-  const shareUrl = `${window.location.origin}?connect=${shareCode}`
+// Share Code Card with copy functionality
+function ShareCodeCard({ shareCode, onCopy, copied, isLoading }) {
+  const shareUrl = shareCode ? `${window.location.origin}?connect=${shareCode}` : ''
   
   const handleShare = async () => {
+    if (!shareCode) return
     if (navigator.share) {
       try {
         await navigator.share({
@@ -97,41 +120,49 @@ function ShareCodeCard({ shareCode, onCopy, copied }) {
   }
   
   return (
-    <div className="glass-card rounded-3xl p-6 animate-slideUpFade stagger-1">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-          <Link2 className="w-6 h-6 text-white" />
+    <div className="card p-6 animate-slideUpFade stagger-1">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-12 h-12 rounded-2xl gradient-neon flex items-center justify-center shadow-neon">
+          <Link2 className="w-6 h-6 text-void-900" />
         </div>
         <div>
           <h3 className="font-display text-lg font-bold text-white">Your Share Code</h3>
-          <p className="text-sm text-midnight-400">Share this with friends to connect</p>
+          <p className="text-sm text-void-400">Share this with friends to connect</p>
         </div>
       </div>
       
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex-1 px-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 font-mono text-lg text-white tracking-widest text-center">
-          {shareCode || 'Loading...'}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 px-5 py-4 rounded-xl bg-void-900/80 border border-void-700 font-mono text-xl text-neon-400 tracking-[0.3em] text-center uppercase min-h-[60px] flex items-center justify-center">
+          {isLoading ? (
+            <Loader2 className="w-6 h-6 animate-spin text-neon-400" />
+          ) : shareCode ? (
+            shareCode
+          ) : (
+            <span className="text-void-500">Generating...</span>
+          )}
         </div>
         <button
           onClick={onCopy}
-          className={`p-3 rounded-xl transition-all duration-300 ${
+          disabled={!shareCode || isLoading}
+          className={`p-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
             copied 
-              ? 'bg-moss-500/20 border border-moss-500/30' 
-              : 'bg-midnight-800/50 border border-midnight-600 hover:bg-white/5'
+              ? 'bg-success-500/20 border border-success-500/30' 
+              : 'bg-void-800 border border-void-700 hover:border-neon-500/30 hover:bg-void-700'
           }`}
         >
           {copied ? (
-            <Check className="w-5 h-5 text-moss-400" />
+            <Check className="w-5 h-5 text-success-400" />
           ) : (
-            <Copy className="w-5 h-5 text-midnight-400" />
+            <Copy className="w-5 h-5 text-void-300" />
           )}
         </button>
       </div>
       
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <button
           onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-[1.02] transition-all duration-500"
+          disabled={!shareCode || isLoading}
+          className="flex-1 btn-primary flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Share2 className="w-4 h-4" />
           Share Link
@@ -141,78 +172,91 @@ function ShareCodeCard({ shareCode, onCopy, copied }) {
             navigator.clipboard.writeText(shareUrl)
             onCopy()
           }}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl glass-light hover:bg-white/5 transition-all duration-300"
+          className="btn-secondary flex items-center justify-center gap-2 px-4 py-3 rounded-xl"
+          title="Copy full URL"
         >
-          <ExternalLink className="w-4 h-4 text-midnight-400" />
+          <ExternalLink className="w-4 h-4" />
         </button>
       </div>
     </div>
   )
 }
 
-// Connect Form
+// Connect Form with validation
 function ConnectForm({ onConnect, isLoading }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!code.trim()) return
     
     setError('')
-    const result = await onConnect(code.trim())
+    setSuccess('')
+    const result = await onConnect(code.trim().toUpperCase())
     if (result?.error) {
       setError(result.error)
     } else {
+      setSuccess('Connection request sent successfully!')
       setCode('')
+      setTimeout(() => setSuccess(''), 3000)
     }
   }
   
   return (
-    <div className="glass-card rounded-3xl p-6 animate-slideUpFade stagger-2">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+    <div className="card p-6 animate-slideUpFade stagger-2">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-12 h-12 rounded-2xl gradient-electric flex items-center justify-center shadow-electric">
           <UserPlus className="w-6 h-6 text-white" />
         </div>
         <div>
           <h3 className="font-display text-lg font-bold text-white">Connect with Someone</h3>
-          <p className="text-sm text-midnight-400">Enter their share code to send a request</p>
+          <p className="text-sm text-void-400">Enter their share code to send a request</p>
         </div>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-void-500" />
           <input
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             placeholder="Enter share code..."
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-midnight-800/50 border border-midnight-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all font-mono tracking-wider placeholder:text-midnight-500 placeholder:font-sans placeholder:tracking-normal"
+            maxLength={8}
+            className="w-full pl-12 pr-4 py-4 rounded-xl input font-mono tracking-widest text-lg placeholder:font-sans placeholder:tracking-normal placeholder:text-base"
           />
         </div>
         
         {error && (
-          <p className="text-sm text-red-400 flex items-center gap-2">
-            <XCircle className="w-4 h-4" />
-            {error}
-          </p>
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-coral-500/10 border border-coral-500/30">
+            <XCircle className="w-5 h-5 text-coral-400 flex-shrink-0" />
+            <p className="text-sm text-coral-400">{error}</p>
+          </div>
+        )}
+        
+        {success && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-success-500/10 border border-success-500/30">
+            <CheckCircle className="w-5 h-5 text-success-400 flex-shrink-0" />
+            <p className="text-sm text-success-400">{success}</p>
+          </div>
         )}
         
         <button
           type="submit"
           disabled={isLoading || !code.trim()}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-500 disabled:opacity-50 disabled:hover:scale-100"
+          className="w-full btn-electric flex items-center justify-center gap-2 px-4 py-4 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Sending...
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Sending Request...
             </>
           ) : (
             <>
-              <Send className="w-4 h-4" />
-              Send Request
+              <Send className="w-5 h-5" />
+              Send Connection Request
             </>
           )}
         </button>
@@ -224,29 +268,30 @@ function ConnectForm({ onConnect, isLoading }) {
 // Pending Request Card
 function PendingRequestCard({ request, onAccept, onReject, isProcessing }) {
   return (
-    <div className="glass-light rounded-2xl p-5 hover:bg-white/5 transition-all duration-300 group animate-slideUpFade shine-effect">
+    <div className="card p-5 hover:border-amber-500/30 transition-all duration-300 group animate-slideUpFade shine-effect">
       <div className="flex items-center gap-4">
         <div 
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold transition-transform duration-300 group-hover:scale-110"
           style={{ 
-            backgroundColor: (request.user?.color || '#3b82f6') + '30',
-            color: request.user?.color || '#3b82f6'
+            backgroundColor: (request.user?.color || '#f59e0b') + '30',
+            color: request.user?.color || '#f59e0b'
           }}
         >
           {request.user?.avatar_initials || '??'}
         </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-white">{request.user?.full_name || 'Unknown'}</h4>
-          <p className="text-sm text-midnight-400 flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Pending request
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-white truncate">{request.user?.full_name || 'Unknown User'}</h4>
+          <p className="text-sm text-void-400 flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            Wants to connect with you
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => onAccept(request.id)}
             disabled={isProcessing}
-            className="p-2.5 rounded-xl bg-moss-500/20 border border-moss-500/30 text-moss-400 hover:bg-moss-500/30 transition-all duration-300 disabled:opacity-50"
+            className="p-3 rounded-xl bg-success-500/20 border border-success-500/30 text-success-400 hover:bg-success-500/30 hover:scale-105 transition-all duration-300 disabled:opacity-50"
+            title="Accept connection"
           >
             {isProcessing ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -257,7 +302,8 @@ function PendingRequestCard({ request, onAccept, onReject, isProcessing }) {
           <button
             onClick={() => onReject(request.id)}
             disabled={isProcessing}
-            className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-300 disabled:opacity-50"
+            className="p-3 rounded-xl bg-coral-500/20 border border-coral-500/30 text-coral-400 hover:bg-coral-500/30 hover:scale-105 transition-all duration-300 disabled:opacity-50"
+            title="Decline connection"
           >
             <XCircle className="w-5 h-5" />
           </button>
@@ -267,36 +313,43 @@ function PendingRequestCard({ request, onAccept, onReject, isProcessing }) {
   )
 }
 
-// Connection Card
-function ConnectionCard({ connection, onRemove, onMessage, isRemoving }) {
+// Connection Card with actions
+function ConnectionCard({ connection, onRemove, onMessage, onShareVehicle, isRemoving }) {
   const connectedUser = connection.connected_user
   
   return (
-    <div className="glass-light rounded-2xl p-5 hover:bg-white/5 transition-all duration-300 group animate-slideUpFade shine-effect">
+    <div className="card p-5 hover:border-neon-500/30 transition-all duration-300 group animate-slideUpFade shine-effect">
       <div className="flex items-center gap-4">
         <div 
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold transition-transform duration-300 group-hover:scale-110"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold transition-all duration-300 group-hover:scale-110"
           style={{ 
-            backgroundColor: (connectedUser?.color || '#3b82f6') + '30',
-            color: connectedUser?.color || '#3b82f6',
-            boxShadow: `0 10px 30px ${connectedUser?.color || '#3b82f6'}30`
+            backgroundColor: (connectedUser?.color || '#00e5c9') + '30',
+            color: connectedUser?.color || '#00e5c9',
+            boxShadow: `0 10px 30px ${connectedUser?.color || '#00e5c9'}20`
           }}
         >
           {connectedUser?.avatar_initials || '??'}
         </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-white group-hover:text-purple-400 transition-colors">
-            {connectedUser?.full_name || 'Unknown'}
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-white group-hover:text-neon-400 transition-colors truncate">
+            {connectedUser?.full_name || 'Unknown User'}
           </h4>
-          <p className="text-sm text-midnight-400 flex items-center gap-1">
-            <CheckCircle className="w-3 h-3 text-moss-400" />
+          <p className="text-sm text-void-400 flex items-center gap-2">
+            <CheckCircle className="w-3.5 h-3.5 text-success-400" />
             Connected
           </p>
         </div>
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button
+            onClick={() => onShareVehicle(connectedUser)}
+            className="p-2.5 rounded-xl bg-neon-500/20 border border-neon-500/30 text-neon-400 hover:bg-neon-500/30 hover:scale-105 transition-all duration-300"
+            title="Share a vehicle"
+          >
+            <Car className="w-5 h-5" />
+          </button>
           <button
             onClick={() => onMessage(connectedUser)}
-            className="p-2.5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition-all duration-300"
+            className="p-2.5 rounded-xl bg-electric-500/20 border border-electric-500/30 text-electric-400 hover:bg-electric-500/30 hover:scale-105 transition-all duration-300"
             title="Send message"
           >
             <MessageSquare className="w-5 h-5" />
@@ -304,7 +357,7 @@ function ConnectionCard({ connection, onRemove, onMessage, isRemoving }) {
           <button
             onClick={() => onRemove(connection.id)}
             disabled={isRemoving}
-            className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-300 disabled:opacity-50"
+            className="p-2.5 rounded-xl bg-coral-500/20 border border-coral-500/30 text-coral-400 hover:bg-coral-500/30 hover:scale-105 transition-all duration-300 disabled:opacity-50"
             title="Remove connection"
           >
             {isRemoving ? (
@@ -319,23 +372,39 @@ function ConnectionCard({ connection, onRemove, onMessage, isRemoving }) {
   )
 }
 
-// Stats Card
+// Stats Cards
 function SocialStats({ connections, pendingRequests, sharedVehicles, loading }) {
   const stats = [
-    { label: 'Connections', value: connections, icon: Users, color: 'purple' },
-    { label: 'Pending', value: pendingRequests, icon: Clock, color: 'yellow' },
-    { label: 'Shared Vehicles', value: sharedVehicles, icon: Car, color: 'blue' },
+    { 
+      label: 'Connections', 
+      value: connections, 
+      icon: Users, 
+      gradient: 'gradient-neon',
+      shadow: 'shadow-neon',
+      textColor: 'text-neon-400'
+    },
+    { 
+      label: 'Pending', 
+      value: pendingRequests, 
+      icon: Clock, 
+      gradient: 'gradient-amber',
+      shadow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]',
+      textColor: 'text-amber-400'
+    },
+    { 
+      label: 'Shared Vehicles', 
+      value: sharedVehicles, 
+      icon: Car, 
+      gradient: 'gradient-electric',
+      shadow: 'shadow-electric',
+      textColor: 'text-electric-400'
+    },
   ]
   
   return (
-    <div className="grid grid-cols-3 gap-4 mb-8">
+    <div className="grid grid-cols-3 gap-4 lg:gap-6 mb-8">
       {stats.map((stat, index) => {
         const Icon = stat.icon
-        const gradients = {
-          purple: 'from-purple-500 to-purple-600',
-          yellow: 'from-yellow-500 to-yellow-600',
-          blue: 'from-blue-500 to-blue-600',
-        }
         
         return (
           <div 
@@ -343,16 +412,16 @@ function SocialStats({ connections, pendingRequests, sharedVehicles, loading }) 
             className="animate-slideUpFade"
             style={{ animationDelay: `${(index + 1) * 100}ms` }}
           >
-            <div className="glass-card rounded-2xl p-5 text-center group hover:scale-105 transition-all duration-500 shine-effect">
-              <div className={`w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br ${gradients[stat.color]} flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform duration-500`}>
-                <Icon className="w-6 h-6 text-white" />
+            <div className="card p-5 lg:p-6 text-center group hover:scale-105 transition-all duration-500 shine-effect">
+              <div className={`w-12 h-12 lg:w-14 lg:h-14 mx-auto rounded-2xl ${stat.gradient} flex items-center justify-center mb-4 ${stat.shadow} group-hover:scale-110 transition-transform duration-500`}>
+                <Icon className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
               </div>
               {loading ? (
-                <div className="h-8 w-12 mx-auto bg-midnight-700/50 rounded skeleton mb-1" />
+                <div className="h-9 w-14 mx-auto bg-void-700/50 rounded skeleton mb-2" />
               ) : (
-                <p className="font-display text-3xl font-bold text-white mb-1">{stat.value}</p>
+                <p className={`font-display text-3xl lg:text-4xl font-bold ${stat.textColor} mb-1`}>{stat.value}</p>
               )}
-              <p className="text-sm text-midnight-400">{stat.label}</p>
+              <p className="text-sm text-void-400">{stat.label}</p>
             </div>
           </div>
         )
@@ -361,10 +430,110 @@ function SocialStats({ connections, pendingRequests, sharedVehicles, loading }) 
   )
 }
 
+// Vehicle Share Modal
+function VehicleShareModal({ isOpen, onClose, targetUser, vehicles, onShare }) {
+  const [selectedVehicle, setSelectedVehicle] = useState(null)
+  const [isSharing, setIsSharing] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleShare = async () => {
+    if (!selectedVehicle) return
+    setIsSharing(true)
+    await onShare(selectedVehicle, targetUser.id)
+    setIsSharing(false)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-void-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md card p-6 animate-scale-in">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-neon flex items-center justify-center">
+              <Car className="w-5 h-5 text-void-900" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-white">Share Vehicle</h3>
+              <p className="text-sm text-void-400">with {targetUser?.full_name}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-void-700 transition-colors"
+          >
+            <X className="w-5 h-5 text-void-400" />
+          </button>
+        </div>
+
+        {vehicles.length > 0 ? (
+          <>
+            <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
+              {vehicles.map((vehicle) => (
+                <button
+                  key={vehicle.id}
+                  onClick={() => setSelectedVehicle(vehicle.id)}
+                  className={`w-full p-4 rounded-xl border transition-all duration-300 text-left ${
+                    selectedVehicle === vehicle.id
+                      ? 'bg-neon-500/10 border-neon-500/50'
+                      : 'bg-void-800/50 border-void-700 hover:border-void-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: vehicle.color + '30' }}
+                    >
+                      <Car className="w-5 h-5" style={{ color: vehicle.color }} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">{vehicle.name}</p>
+                      <p className="text-sm text-void-400">{vehicle.make} {vehicle.model}</p>
+                    </div>
+                    {selectedVehicle === vehicle.id && (
+                      <CheckCircle className="w-5 h-5 text-neon-400 ml-auto" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleShare}
+              disabled={!selectedVehicle || isSharing}
+              className="w-full btn-primary py-3 rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSharing ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Sharing...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-5 h-5" />
+                  Share Vehicle
+                </>
+              )}
+            </button>
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <Car className="w-12 h-12 text-void-600 mx-auto mb-3" />
+            <p className="text-void-400">No vehicles to share</p>
+            <p className="text-sm text-void-500">Add a vehicle first to share it</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Main Social Component
 export default function Social() {
   const { user } = useAuth()
   const {
     profile,
+    vehicles,
     connections,
     pendingConnections,
     sharedVehicles,
@@ -374,17 +543,33 @@ export default function Social() {
     acceptConnection,
     rejectConnection,
     removeConnection,
+    shareVehicle,
   } = useStore()
   
   const [copied, setCopied] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [processingId, setProcessingId] = useState(null)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [shareTargetUser, setShareTargetUser] = useState(null)
   
+  // Fetch connections on mount and when user changes
   useEffect(() => {
     if (user?.id) {
       fetchConnections(user.id)
     }
   }, [user?.id, fetchConnections])
+  
+  // Handle URL connection code
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const connectCode = params.get('connect')
+    if (connectCode && user?.id) {
+      // Auto-fill the connect form or auto-send request
+      handleConnect(connectCode)
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [user?.id])
   
   const handleCopyCode = () => {
     if (profile?.share_code) {
@@ -404,6 +589,10 @@ export default function Social() {
   const handleAccept = async (id) => {
     setProcessingId(id)
     await acceptConnection(id)
+    // Refresh connections after accepting
+    if (user?.id) {
+      await fetchConnections(user.id)
+    }
     setProcessingId(null)
   }
   
@@ -421,9 +610,18 @@ export default function Social() {
     }
   }
   
-  const handleMessage = (user) => {
+  const handleMessage = (targetUser) => {
     // TODO: Navigate to messages with this user
-    console.log('Message user:', user)
+    console.log('Message user:', targetUser)
+  }
+
+  const handleOpenShareModal = (targetUser) => {
+    setShareTargetUser(targetUser)
+    setShareModalOpen(true)
+  }
+
+  const handleShareVehicle = async (vehicleId, targetUserId) => {
+    await shareVehicle(vehicleId, targetUserId)
   }
   
   const isLoading = loading.connections || loading.global
@@ -441,16 +639,15 @@ export default function Social() {
         loading={isLoading}
       />
       
-      {/* Main Content */}
+      {/* Main Content - Share & Connect */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Share Code */}
         <ShareCodeCard 
           shareCode={profile?.share_code}
           onCopy={handleCopyCode}
           copied={copied}
+          isLoading={loading.profile || loading.global}
         />
         
-        {/* Connect Form */}
         <ConnectForm 
           onConnect={handleConnect}
           isLoading={isConnecting}
@@ -460,15 +657,17 @@ export default function Social() {
       {/* Pending Requests */}
       {pendingConnections.length > 0 && (
         <div className="mb-8 animate-slideUpFade stagger-3">
-          <h3 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-yellow-400" />
-            Pending Requests
-            <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 text-sm font-medium">
-              {pendingConnections.length}
-            </span>
-          </h3>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold text-white">Pending Requests</h3>
+              <p className="text-sm text-void-400">{pendingConnections.length} people want to connect</p>
+            </div>
+          </div>
           <div className="space-y-3">
-            {pendingConnections.map((request, index) => (
+            {pendingConnections.map((request) => (
               <PendingRequestCard
                 key={request.id}
                 request={request}
@@ -481,12 +680,28 @@ export default function Social() {
         </div>
       )}
       
-      {/* Connections */}
+      {/* Connections List */}
       <div className="animate-slideUpFade stagger-4">
-        <h3 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-purple-400" />
-          Your Connections
-        </h3>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-neon-500/20 flex items-center justify-center">
+              <Users className="w-5 h-5 text-neon-400" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold text-white">Your Connections</h3>
+              <p className="text-sm text-void-400">{connections.length} connected users</p>
+            </div>
+          </div>
+          {connections.length > 0 && (
+            <button
+              onClick={() => user?.id && fetchConnections(user.id)}
+              className="p-2 rounded-lg hover:bg-void-700 transition-colors"
+              title="Refresh connections"
+            >
+              <RefreshCw className="w-5 h-5 text-void-400" />
+            </button>
+          )}
+        </div>
         
         {isLoading ? (
           <div className="space-y-3">
@@ -496,29 +711,55 @@ export default function Social() {
           </div>
         ) : connections.length > 0 ? (
           <div className="space-y-3">
-            {connections.map((connection, index) => (
+            {connections.map((connection) => (
               <ConnectionCard
                 key={connection.id}
                 connection={connection}
                 onRemove={handleRemove}
                 onMessage={handleMessage}
+                onShareVehicle={handleOpenShareModal}
                 isRemoving={processingId === connection.id}
               />
             ))}
           </div>
         ) : (
-          <div className="glass-card rounded-3xl p-12 text-center">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-midnight-700/30 flex items-center justify-center mb-4">
-              <Users className="w-10 h-10 text-midnight-600" />
+          <div className="card p-12 text-center">
+            <div className="w-24 h-24 mx-auto rounded-3xl bg-void-800/50 flex items-center justify-center mb-5">
+              <Users className="w-12 h-12 text-void-600" />
             </div>
             <h4 className="font-display text-xl font-bold text-white mb-2">No Connections Yet</h4>
-            <p className="text-midnight-400 max-w-sm mx-auto">
-              Share your code or enter someone else's code above to start connecting with friends and family.
+            <p className="text-void-400 max-w-sm mx-auto mb-6">
+              Share your code with friends and family, or enter someone's code above to start connecting.
             </p>
+            <div className="flex items-center justify-center gap-4 text-sm text-void-500">
+              <span className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-neon-500" />
+                Secure
+              </span>
+              <span className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-electric-500" />
+                Instant
+              </span>
+              <span className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-success-500" />
+                Easy
+              </span>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Vehicle Share Modal */}
+      <VehicleShareModal
+        isOpen={shareModalOpen}
+        onClose={() => {
+          setShareModalOpen(false)
+          setShareTargetUser(null)
+        }}
+        targetUser={shareTargetUser}
+        vehicles={vehicles}
+        onShare={handleShareVehicle}
+      />
     </div>
   )
 }
-

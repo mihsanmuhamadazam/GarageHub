@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   Loader2,
-  Users
+  Users,
+  Sparkles
 } from 'lucide-react'
 import { useAuth } from './contexts/AuthContext'
 import { useStore } from './store/useStore'
@@ -44,7 +45,7 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
   const { profile } = useStore()
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
   const initials = profile?.avatar_initials || user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const color = profile?.color || '#3b82f6'
+  const color = profile?.color || '#00e5c9'
 
   const handleSignOut = async () => {
     useStore.getState().clearData()
@@ -56,27 +57,27 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-void-950/80 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#111827] border-r border-white/5 z-50 transform transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed top-0 left-0 h-full w-72 bg-void-900/95 backdrop-blur-xl border-r border-white/5 z-50 transform transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-white/5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-11 h-11 rounded-xl gradient-neon flex items-center justify-center shadow-neon">
+                <svg className="w-6 h-6 text-void-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                   <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                   <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">GarageHub</h1>
-                <p className="text-xs text-gray-500">Vehicle Management</p>
+                <h1 className="text-xl font-bold text-white tracking-tight">Garage<span className="text-neon-400">Hub</span></h1>
+                <p className="text-xs text-void-400 font-medium">Vehicle Management</p>
               </div>
             </div>
           </div>
@@ -97,6 +98,9 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
+                  {item.id === 'social' && (
+                    <Sparkles className="w-4 h-4 text-neon-400 ml-auto" />
+                  )}
                 </button>
               )
             })}
@@ -104,24 +108,24 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
 
           {/* User Section */}
           <div className="p-4 border-t border-white/5">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-void-800/50">
               <div 
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold"
-                style={{ backgroundColor: color + '20', color: color }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold"
+                style={{ backgroundColor: color + '30', color: color }}
               >
                 {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+                <p className="text-xs text-void-400 truncate">{user?.email}</p>
               </div>
             </div>
             <button 
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-void-400 hover:text-coral-400 hover:bg-coral-500/10 transition-all duration-300"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Sign out</span>
+              <LogOut className="w-5 h-5" />
+              <span className="text-sm font-medium">Sign out</span>
             </button>
           </div>
         </div>
@@ -139,7 +143,7 @@ function Header({ setIsSidebarOpen }) {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
   const initials = profile?.avatar_initials || user?.user_metadata?.avatar_initials || displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  const color = profile?.color || '#3b82f6'
+  const color = profile?.color || '#00e5c9'
 
   const handleSignOut = async () => {
     useStore.getState().clearData()
@@ -149,61 +153,66 @@ function Header({ setIsSidebarOpen }) {
   const hasNotifications = pendingConnections?.length > 0
 
   return (
-    <header className="sticky top-0 z-30 bg-[#0c0f14]/80 backdrop-blur-xl border-b border-white/5">
+    <header className="sticky top-0 z-30 bg-void-900/80 backdrop-blur-xl border-b border-white/5">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
         {/* Mobile menu button */}
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors"
+          className="lg:hidden p-2 rounded-xl hover:bg-void-800 transition-colors"
         >
-          <Menu className="w-5 h-5 text-gray-400" />
+          <Menu className="w-6 h-6 text-void-300" />
         </button>
 
         {/* Search */}
-        <div className="hidden md:flex flex-1 max-w-md">
+        <div className="hidden md:flex flex-1 max-w-md ml-4 lg:ml-0">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-void-500" />
             <input
               type="text"
               placeholder="Search vehicles, bookings..."
-              className="input w-full pl-10 pr-4 py-2 rounded-lg text-sm"
+              className="input w-full pl-11 pr-4 py-2.5 rounded-xl text-sm bg-void-800/50"
             />
           </div>
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Notifications */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+              className="relative p-2.5 rounded-xl hover:bg-void-800 transition-colors"
             >
-              <Bell className="w-5 h-5 text-gray-400" />
+              <Bell className="w-5 h-5 text-void-300" />
               {hasNotifications && <span className="notification-dot" />}
             </button>
             
             {showNotifications && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
-                <div className="absolute right-0 top-full mt-2 w-80 card p-0 overflow-hidden z-20 animate-scaleIn">
-                  <div className="p-4 border-b border-white/5">
+                <div className="absolute right-0 top-full mt-2 w-80 card p-0 overflow-hidden z-20 animate-scale-in">
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between">
                     <h3 className="font-semibold text-white">Notifications</h3>
+                    {hasNotifications && (
+                      <span className="px-2 py-0.5 rounded-full bg-coral-500/20 text-coral-400 text-xs font-medium">
+                        {pendingConnections.length}
+                      </span>
+                    )}
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {pendingConnections?.length > 0 ? (
                       pendingConnections.map((conn) => (
-                        <div key={conn.id} className="p-4 hover:bg-white/5 transition-colors border-b border-white/5">
+                        <div key={conn.id} className="p-4 hover:bg-void-800/50 transition-colors border-b border-white/5">
                           <p className="text-sm text-white">
-                            <span className="font-medium">{conn.user?.full_name || 'Someone'}</span> wants to connect
+                            <span className="font-medium text-neon-400">{conn.user?.full_name || 'Someone'}</span> wants to connect
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">Pending request</p>
+                          <p className="text-xs text-void-400 mt-1">Pending connection request</p>
                         </div>
                       ))
                     ) : (
                       <div className="p-8 text-center">
-                        <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">No new notifications</p>
+                        <Bell className="w-8 h-8 text-void-600 mx-auto mb-2" />
+                        <p className="text-sm text-void-400">No new notifications</p>
                       </div>
                     )}
                   </div>
@@ -216,33 +225,33 @@ function Header({ setIsSidebarOpen }) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+              className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-void-800 transition-colors"
             >
               <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                style={{ backgroundColor: color + '20', color: color }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold"
+                style={{ backgroundColor: color + '30', color: color }}
               >
                 {initials}
               </div>
               <span className="hidden sm:block text-sm font-medium text-white">{displayName.split(' ')[0]}</span>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-void-400 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`} />
             </button>
 
             {showUserMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-                <div className="absolute right-0 top-full mt-2 w-48 card p-2 z-20 animate-scaleIn">
-                  <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors">
+                <div className="absolute right-0 top-full mt-2 w-52 card p-2 z-20 animate-scale-in">
+                  <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-void-300 hover:text-white hover:bg-void-700 transition-colors">
                     <Settings className="w-4 h-4" />
-                    <span className="text-sm">Settings</span>
+                    <span className="text-sm font-medium">Settings</span>
                   </button>
-                  <div className="my-1 h-px bg-white/5" />
+                  <div className="my-2 h-px bg-white/5" />
                   <button 
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-coral-400 hover:bg-coral-500/10 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span className="text-sm">Sign out</span>
+                    <span className="text-sm font-medium">Sign out</span>
                   </button>
                 </div>
               </>
@@ -291,7 +300,7 @@ function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0f14]">
+    <div className="min-h-screen bg-void-950">
       <div className="bg-pattern fixed inset-0 pointer-events-none" />
       
       <Sidebar 
@@ -301,7 +310,7 @@ function AppLayout() {
         setIsOpen={setIsSidebarOpen}
       />
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-72">
         <Header setIsSidebarOpen={setIsSidebarOpen} />
         
         <main className="p-4 lg:p-6">
@@ -317,17 +326,18 @@ function AppLayout() {
 // Loading Screen
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#0c0f14] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div className="min-h-screen bg-void-950 flex items-center justify-center">
+      <div className="bg-pattern fixed inset-0 pointer-events-none" />
+      <div className="text-center relative z-10">
+        <div className="w-20 h-20 rounded-2xl gradient-neon flex items-center justify-center mx-auto mb-6 shadow-neon animate-float">
+          <svg className="w-12 h-12 text-void-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
             <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
             <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
           </svg>
         </div>
-        <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto" />
-        <p className="text-gray-400 mt-2">Loading...</p>
+        <Loader2 className="w-8 h-8 text-neon-400 animate-spin mx-auto" />
+        <p className="text-void-300 mt-4 font-medium">Loading GarageHub...</p>
       </div>
     </div>
   )
@@ -336,22 +346,23 @@ function LoadingScreen() {
 // Configuration Error Screen
 function ConfigErrorScreen() {
   return (
-    <div className="min-h-screen bg-[#0c0f14] flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div className="min-h-screen bg-void-950 flex items-center justify-center p-4">
+      <div className="bg-pattern fixed inset-0 pointer-events-none" />
+      <div className="text-center max-w-md relative z-10">
+        <div className="w-20 h-20 rounded-2xl gradient-coral flex items-center justify-center mx-auto mb-6 shadow-coral">
+          <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Configuration Required</h1>
-        <p className="text-gray-400 mb-6">
-          Supabase environment variables are not configured. Please add the following to your Vercel project settings:
+        <h1 className="text-3xl font-bold text-white mb-3">Configuration Required</h1>
+        <p className="text-void-300 mb-8">
+          Supabase environment variables are not configured. Please add the following to your project settings:
         </p>
-        <div className="bg-[#1a1f2e] rounded-xl p-4 text-left mb-6">
-          <code className="text-sm text-blue-400 block mb-2">VITE_SUPABASE_URL</code>
-          <code className="text-sm text-blue-400 block">VITE_SUPABASE_ANON_KEY</code>
+        <div className="card p-5 text-left mb-8">
+          <code className="text-sm text-neon-400 font-mono block mb-2">VITE_SUPABASE_URL</code>
+          <code className="text-sm text-neon-400 font-mono block">VITE_SUPABASE_ANON_KEY</code>
         </div>
-        <p className="text-gray-500 text-sm">
+        <p className="text-void-500 text-sm">
           Go to Vercel Dashboard → Project Settings → Environment Variables
         </p>
       </div>

@@ -293,11 +293,58 @@ export const db = {
   // Profile
   async getProfile(userId) {
     if (!supabase) return { data: null, error: null }
+    
+    // First try to get existing profile
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
+      .maybeSingle()
+    
+    // If profile exists, return it
+    if (data) {
+      return { data, error: null }
+    }
+    
+    // If no profile exists, try to create one
+    if (!data && !error) {
+      console.log('Profile not found, creating one for user:', userId)
+      const newProfile = await this.createProfile(userId)
+      return newProfile
+    }
+    
+    return { data: null, error }
+  },
+
+  async createProfile(userId, metadata = {}) {
+    if (!supabase) return { data: null, error: { message: 'Supabase not configured' } }
+    
+    // Generate a random share code
+    const shareCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+    
+    const profileData = {
+      id: userId,
+      full_name: metadata.full_name || 'User',
+      avatar_initials: metadata.avatar_initials || 'US',
+      color: metadata.color || '#00e5c9',
+      share_code: shareCode,
+      role: 'member',
+    }
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([profileData])
+      .select()
       .single()
+    
+    if (error) {
+      console.error('Error creating profile:', error)
+      // If insert failed due to duplicate, try to fetch existing
+      if (error.code === '23505') {
+        return this.getProfile(userId)
+      }
+    }
+    
     return { data, error }
   },
 
@@ -317,8 +364,8 @@ export const db = {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('share_code', shareCode)
-      .single()
+      .eq('share_code', shareCode.toUpperCase())
+      .maybeSingle()
     return { data, error }
   },
 

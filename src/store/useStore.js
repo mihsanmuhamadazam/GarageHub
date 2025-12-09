@@ -68,6 +68,11 @@ export const useStore = create((set, get) => ({
 
     try {
       console.log('Fetching all data from Supabase...')
+      
+      // Get user metadata for profile creation if needed
+      const currentUser = get().currentUser
+      const metadata = currentUser?.user_metadata || {}
+      
       // Fetch all data in parallel
       const [
         vehiclesRes,
@@ -78,7 +83,6 @@ export const useStore = create((set, get) => ({
         connectionsRes,
         pendingRes,
         sharedRes,
-        profileRes,
       ] = await Promise.all([
         db.getVehicles(userId),
         db.getBookings(userId),
@@ -88,8 +92,20 @@ export const useStore = create((set, get) => ({
         db.getConnections(userId),
         db.getPendingConnections(userId),
         db.getSharedVehicles(userId),
-        db.getProfile(userId),
       ])
+      
+      // Fetch profile separately so we can handle creation with metadata
+      let profileRes = await db.getProfile(userId)
+      
+      // If profile doesn't exist, create one with user metadata
+      if (!profileRes.data && !profileRes.error && metadata) {
+        console.log('Profile not found during init, creating with metadata:', metadata)
+        profileRes = await db.createProfile(userId, {
+          full_name: metadata.full_name || currentUser?.email?.split('@')[0] || 'User',
+          avatar_initials: metadata.avatar_initials || (metadata.full_name || currentUser?.email || 'US').slice(0, 2).toUpperCase(),
+          color: metadata.color || '#00e5c9',
+        })
+      }
       
       console.log('Data fetched:', {
         vehicles: vehiclesRes.data?.length || 0,
@@ -721,7 +737,25 @@ export const useStore = create((set, get) => ({
   // Profile Actions
   fetchProfile: async (userId) => {
     set((state) => ({ loading: { ...state.loading, profile: true } }))
-    const { data, error } = await db.getProfile(userId)
+    
+    // Get user metadata from auth to use for profile creation if needed
+    const currentUser = get().currentUser
+    const metadata = {
+      full_name: currentUser?.user_metadata?.full_name,
+      avatar_initials: currentUser?.user_metadata?.avatar_initials,
+      color: currentUser?.user_metadata?.color,
+    }
+    
+    let { data, error } = await db.getProfile(userId)
+    
+    // If profile is still null and no error, try to create one with metadata
+    if (!data && !error && currentUser) {
+      console.log('Creating profile with user metadata:', metadata)
+      const createResult = await db.createProfile(userId, metadata)
+      data = createResult.data
+      error = createResult.error
+    }
+    
     set({
       profile: data,
       loading: { ...get().loading, profile: false },

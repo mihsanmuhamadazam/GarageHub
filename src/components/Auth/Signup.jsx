@@ -1,252 +1,331 @@
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, User, CheckCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, User, Palette, Sparkles } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+
+const COLORS = [
+  { name: 'Neon', value: '#00e5c9' },
+  { name: 'Electric', value: '#7c3aed' },
+  { name: 'Coral', value: '#ff4d2a' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Success', value: '#10b981' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+]
 
 export default function Signup({ onSwitchToLogin }) {
   const { signUp } = useAuth()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    color: '#00e5c9',
+  })
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setSuccess('')
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
-
     setIsLoading(true)
 
-    console.log('Attempting signup with email:', email)
-    
-    const { data, error } = await signUp(email, password, {
-      full_name: name,
-      avatar_initials: name.split(' ').map(n => n[0]).join('').toUpperCase(),
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters')
+      setIsLoading(false)
+      return
+    }
+
+    // Generate initials from full name
+    const nameParts = formData.fullName.trim().split(' ')
+    const initials = nameParts.length > 1 
+      ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+      : formData.fullName.slice(0, 2).toUpperCase()
+
+    const { data, error } = await signUp(formData.email, formData.password, {
+      full_name: formData.fullName,
+      avatar_initials: initials,
+      color: formData.color,
     })
 
-    console.log('Signup result:', { data, error })
-
     if (error) {
-      console.error('Signup error:', error)
       setError(error.message || 'Failed to create account')
       setIsLoading(false)
       return
     }
 
-    // Check if email confirmation is required
-    if (data?.user && !data?.session) {
-      console.log('User created, waiting for email confirmation:', data.user)
-      setSuccess('Account created! Please check your email to confirm your account.')
-    } else if (data?.user && data?.session) {
-      console.log('User created and logged in:', data.user)
-      // User is already logged in, the app will redirect automatically
-    }
-    
+    setSuccess(true)
     setIsLoading(false)
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-void-950 p-8">
+        <div className="bg-pattern fixed inset-0 pointer-events-none" />
+        <div className="w-full max-w-md text-center animate-scale-in relative z-10">
+          <div className="w-24 h-24 mx-auto mb-8 rounded-3xl gradient-neon flex items-center justify-center shadow-neon">
+            <Sparkles className="w-12 h-12 text-void-900" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">Account Created!</h2>
+          <p className="text-void-300 mb-8 text-lg">
+            Please check your email to verify your account before signing in.
+          </p>
+          <button
+            onClick={onSwitchToLogin}
+            className="btn-primary px-8 py-4 rounded-xl font-semibold text-base"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex bg-[#0c0f14]">
+    <div className="min-h-screen flex bg-void-950">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#0f1419] to-[#0c0f14] items-center justify-center p-12">
-        <div className="absolute inset-0 bg-grid opacity-30" />
+      <div className="hidden lg:flex lg:w-1/2 relative bg-void-900 items-center justify-center p-12 overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-20" />
         <div className="absolute inset-0 bg-pattern" />
+        
+        {/* Animated orbs */}
+        <div className="absolute top-20 right-20 w-64 h-64 bg-electric-500/20 rounded-full filter blur-[100px] animate-float" />
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-neon-500/15 rounded-full filter blur-[100px] animate-float-slow" />
+        <div className="absolute top-1/3 left-1/3 w-48 h-48 bg-coral-500/10 rounded-full filter blur-[80px] animate-float" style={{ animationDelay: '3s' }} />
         
         <div className="relative z-10 max-w-lg">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-14 h-14 rounded-2xl gradient-electric flex items-center justify-center shadow-electric">
+              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                 <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                 <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">GarageHub</h1>
-              <p className="text-xs text-gray-500">Vehicle Management</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Garage<span className="text-electric-400">Hub</span></h1>
+              <p className="text-sm text-void-400">Vehicle Management</p>
             </div>
           </div>
 
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
-            Start managing your fleet today.
+            Start managing your vehicles{' '}
+            <span className="text-gradient-electric">smarter</span> today.
           </h2>
           
-          <p className="text-gray-400 text-lg mb-8">
-            Join thousands of teams who trust GarageHub for efficient vehicle management and coordination.
+          <p className="text-void-300 text-lg mb-10">
+            Join thousands of families and teams who use GarageHub to keep their fleet organized and running smoothly.
           </p>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-6">
+          {/* Benefits */}
+          <div className="space-y-4">
             {[
-              { value: '10K+', label: 'Active Users' },
-              { value: '50K+', label: 'Vehicles Managed' },
-              { value: '99.9%', label: 'Uptime' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
+              'Free to start, upgrade anytime',
+              'Invite unlimited family members',
+              'Share vehicles with anyone',
+              'Get maintenance reminders',
+            ].map((benefit, i) => (
+              <div key={i} className="flex items-center gap-3 text-void-200">
+                <div className="w-6 h-6 rounded-full bg-electric-500/20 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-electric-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">{benefit}</span>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Abstract car silhouette */}
-        <div className="absolute bottom-0 right-0 w-96 h-48 opacity-5">
-          <svg viewBox="0 0 400 200" className="w-full h-full" fill="currentColor">
-            <path d="M380 160 L360 120 L300 100 L260 80 L180 80 L120 100 L60 120 L20 160 L380 160 Z" />
-            <circle cx="100" cy="160" r="25" />
-            <circle cx="300" cy="160" r="25" />
-          </svg>
-        </div>
       </div>
 
       {/* Right Panel - Signup Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md animate-fadeIn">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 overflow-y-auto">
+        <div className="w-full max-w-md animate-fadeIn py-8">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="w-12 h-12 rounded-xl gradient-electric flex items-center justify-center shadow-electric">
+              <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                 <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                 <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">GarageHub</span>
+            <span className="text-xl font-bold text-white">Garage<span className="text-electric-400">Hub</span></span>
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Create your account</h2>
-            <p className="text-gray-400">Get started with GarageHub vehicle management</p>
+            <h2 className="text-3xl font-bold text-white mb-2">Create your account</h2>
+            <p className="text-void-400">Get started with GarageHub for free</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 animate-scaleIn">
-              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3 animate-scaleIn">
-              <CheckCircle className="w-5 h-5 text-green-400 shrink-0" />
-              <p className="text-sm text-green-400">{success}</p>
+            <div className="mb-6 p-4 rounded-xl bg-coral-500/10 border border-coral-500/30 flex items-center gap-3 animate-scale-in">
+              <AlertCircle className="w-5 h-5 text-coral-400 shrink-0" />
+              <p className="text-sm text-coral-400">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Full name</label>
+              <label className="block text-sm font-medium text-void-200 mb-2">Full name</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-void-500" />
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input w-full pl-12 pr-4 py-3.5 rounded-xl"
-                  placeholder="Enter your full name"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="input w-full pl-12 pr-4 py-4 rounded-xl text-base"
+                  placeholder="John Smith"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email address</label>
+              <label className="block text-sm font-medium text-void-200 mb-2">Email address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-void-500" />
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input w-full pl-12 pr-4 py-3.5 rounded-xl"
-                  placeholder="Enter your email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input w-full pl-12 pr-4 py-4 rounded-xl text-base"
+                  placeholder="john@example.com"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input w-full pl-12 pr-12 py-3.5 rounded-xl"
-                  placeholder="Create a password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-void-200 mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-void-500" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="input w-full pl-12 pr-11 py-4 rounded-xl text-base"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-void-500 hover:text-void-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-void-200 mb-2">Confirm</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-void-500" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="input w-full pl-12 pr-11 py-4 rounded-xl text-base"
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-void-500 hover:text-void-300 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
             </div>
 
+            {/* Color Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input w-full pl-12 pr-4 py-3.5 rounded-xl"
-                  placeholder="Confirm your password"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <input type="checkbox" required className="w-4 h-4 mt-1 rounded border-gray-600 bg-transparent text-blue-500 focus:ring-blue-500/20" />
-                <span className="text-sm text-gray-400">
-                  I agree to the <a href="#" className="text-blue-400 hover:text-blue-300">Terms of Service</a> and <a href="#" className="text-blue-400 hover:text-blue-300">Privacy Policy</a>
-                </span>
+              <label className="flex items-center gap-2 text-sm font-medium text-void-200 mb-3">
+                <Palette className="w-4 h-4" />
+                Choose your accent color
               </label>
+              <div className="flex flex-wrap gap-3">
+                {COLORS.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, color: color.value })}
+                    className={`w-10 h-10 rounded-xl transition-all duration-300 ${
+                      formData.color === color.value 
+                        ? 'ring-2 ring-offset-2 ring-offset-void-950 scale-110' 
+                        : 'hover:scale-105'
+                    }`}
+                    style={{ 
+                      backgroundColor: color.value,
+                      ringColor: formData.color === color.value ? color.value : 'transparent'
+                    }}
+                    title={color.name}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="p-4 rounded-xl bg-void-800/50 border border-void-700">
+              <p className="text-xs text-void-500 mb-2">Preview</p>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold transition-colors duration-300"
+                  style={{ backgroundColor: formData.color + '30', color: formData.color }}
+                >
+                  {formData.fullName ? formData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'YO'}
+                </div>
+                <div>
+                  <p className="font-semibold text-white">{formData.fullName || 'Your Name'}</p>
+                  <p className="text-sm text-void-400">{formData.email || 'your@email.com'}</p>
+                </div>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-primary w-full py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-70"
+              className="btn-electric w-full py-4 rounded-xl flex items-center justify-center gap-2 text-base font-semibold disabled:opacity-70"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Create account
-                  <ArrowRight className="w-4 h-4" />
+                  Create Account
+                  <ArrowRight className="w-5 h-5" />
                 </>
               )}
             </button>
           </form>
 
           <div className="mt-8 text-center">
-            <p className="text-gray-400">
+            <p className="text-void-400">
               Already have an account?{' '}
               <button 
                 onClick={onSwitchToLogin}
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                className="text-electric-400 hover:text-electric-300 font-semibold transition-colors"
               >
                 Sign in
               </button>
