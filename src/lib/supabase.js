@@ -73,7 +73,7 @@ export const db = {
     if (!supabase) return { data: [], error: null }
     const { data, error } = await supabase
       .from('bookings')
-      .select('*, vehicles(*)')
+      .select('*')
       .eq('user_id', userId)
       .order('start_date', { ascending: false })
     return { data: data || [], error }
@@ -114,7 +114,7 @@ export const db = {
     if (!supabase) return { data: [], error: null }
     const { data, error } = await supabase
       .from('services')
-      .select('*, vehicles(*)')
+      .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false })
     return { data: data || [], error }
@@ -150,12 +150,12 @@ export const db = {
     return { error }
   },
 
-  // Messages
+  // Messages - simplified query without complex joins
   async getMessages(userId) {
     if (!supabase) return { data: [], error: null }
     const { data, error } = await supabase
       .from('messages')
-      .select('*, vehicles(*), profiles(*)')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: true })
     return { data: data || [], error }
@@ -185,7 +185,7 @@ export const db = {
     if (!supabase) return { data: [], error: null }
     const { data, error } = await supabase
       .from('usage_log')
-      .select('*, vehicles(*)')
+      .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false })
     return { data: data || [], error }
@@ -201,31 +201,63 @@ export const db = {
     return { data, error }
   },
 
-  // Connections (Social Features)
+  // Connections (Social Features) - simplified queries
   async getConnections(userId) {
     if (!supabase) return { data: [], error: null }
-    const { data, error } = await supabase
+    // First get connections
+    const { data: connections, error } = await supabase
       .from('connections')
-      .select(`
-        *,
-        connected_user:profiles!connections_connected_user_id_fkey(*)
-      `)
+      .select('*')
       .eq('user_id', userId)
       .eq('status', 'accepted')
-    return { data: data || [], error }
+    
+    if (error || !connections?.length) {
+      return { data: connections || [], error }
+    }
+    
+    // Then get the connected users' profiles
+    const connectedUserIds = connections.map(c => c.connected_user_id)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', connectedUserIds)
+    
+    // Merge data
+    const enrichedConnections = connections.map(conn => ({
+      ...conn,
+      connected_user: profiles?.find(p => p.id === conn.connected_user_id) || null
+    }))
+    
+    return { data: enrichedConnections, error: null }
   },
 
   async getPendingConnections(userId) {
     if (!supabase) return { data: [], error: null }
-    const { data, error } = await supabase
+    // Get pending connections where user is the recipient
+    const { data: connections, error } = await supabase
       .from('connections')
-      .select(`
-        *,
-        user:profiles!connections_user_id_fkey(*)
-      `)
+      .select('*')
       .eq('connected_user_id', userId)
       .eq('status', 'pending')
-    return { data: data || [], error }
+    
+    if (error || !connections?.length) {
+      return { data: connections || [], error }
+    }
+    
+    // Get the requesting users' profiles
+    const userIds = connections.map(c => c.user_id)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', userIds)
+    
+    // Merge data
+    const enrichedConnections = connections.map(conn => ({
+      ...conn,
+      user: profiles?.find(p => p.id === conn.user_id) || null
+    }))
+    
+    return { data: enrichedConnections, error: null }
   },
 
   async createConnection(connection) {
@@ -290,18 +322,41 @@ export const db = {
     return { data, error }
   },
 
-  // Shared Vehicles (vehicles shared by connections)
+  // Shared Vehicles - simplified query
   async getSharedVehicles(userId) {
     if (!supabase) return { data: [], error: null }
-    const { data, error } = await supabase
+    // Get shares
+    const { data: shares, error } = await supabase
       .from('vehicle_shares')
-      .select(`
-        *,
-        vehicle:vehicles(*),
-        shared_by:profiles!vehicle_shares_shared_by_fkey(*)
-      `)
+      .select('*')
       .eq('shared_with', userId)
-    return { data: data || [], error }
+    
+    if (error || !shares?.length) {
+      return { data: shares || [], error }
+    }
+    
+    // Get vehicles
+    const vehicleIds = shares.map(s => s.vehicle_id)
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('*')
+      .in('id', vehicleIds)
+    
+    // Get profiles of sharers
+    const sharerIds = shares.map(s => s.shared_by)
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', sharerIds)
+    
+    // Merge data
+    const enrichedShares = shares.map(share => ({
+      ...share,
+      vehicle: vehicles?.find(v => v.id === share.vehicle_id) || null,
+      shared_by_profile: profiles?.find(p => p.id === share.shared_by) || null
+    }))
+    
+    return { data: enrichedShares, error: null }
   },
 
   async shareVehicle(vehicleId, sharedBy, sharedWith) {
@@ -324,4 +379,3 @@ export const db = {
     return { error }
   }
 }
-
