@@ -201,32 +201,54 @@ export const db = {
     return { data, error }
   },
 
-  // Connections (Social Features) - simplified queries
+  // Connections (Social Features) - BIDIRECTIONAL queries
   async getConnections(userId) {
     if (!supabase) return { data: [], error: null }
-    // First get connections
-    const { data: connections, error } = await supabase
+    
+    // Get connections where user initiated (user_id = me)
+    const { data: sentConnections, error: error1 } = await supabase
       .from('connections')
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'accepted')
     
-    if (error || !connections?.length) {
-      return { data: connections || [], error }
+    // Get connections where user was invited (connected_user_id = me)
+    const { data: receivedConnections, error: error2 } = await supabase
+      .from('connections')
+      .select('*')
+      .eq('connected_user_id', userId)
+      .eq('status', 'accepted')
+    
+    if (error1 || error2) {
+      return { data: [], error: error1 || error2 }
     }
     
-    // Then get the connected users' profiles
-    const connectedUserIds = connections.map(c => c.connected_user_id)
+    // Combine all connections
+    const allConnections = [...(sentConnections || []), ...(receivedConnections || [])]
+    
+    if (!allConnections.length) {
+      return { data: [], error: null }
+    }
+    
+    // Get all connected user IDs (the OTHER person in each connection)
+    const connectedUserIds = allConnections.map(c => 
+      c.user_id === userId ? c.connected_user_id : c.user_id
+    )
+    
+    // Fetch profiles for all connected users
     const { data: profiles } = await supabase
       .from('profiles')
       .select('*')
       .in('id', connectedUserIds)
     
-    // Merge data
-    const enrichedConnections = connections.map(conn => ({
-      ...conn,
-      connected_user: profiles?.find(p => p.id === conn.connected_user_id) || null
-    }))
+    // Merge data - determine who the "other" user is in each connection
+    const enrichedConnections = allConnections.map(conn => {
+      const otherUserId = conn.user_id === userId ? conn.connected_user_id : conn.user_id
+      return {
+        ...conn,
+        connected_user: profiles?.find(p => p.id === otherUserId) || null
+      }
+    })
     
     return { data: enrichedConnections, error: null }
   },

@@ -434,20 +434,39 @@ function SocialStats({ connections, pendingRequests, sharedVehicles, loading }) 
 function VehicleShareModal({ isOpen, onClose, targetUser, vehicles, onShare }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [isSharing, setIsSharing] = useState(false)
+  const [shareResult, setShareResult] = useState(null)
 
   if (!isOpen) return null
 
   const handleShare = async () => {
     if (!selectedVehicle) return
     setIsSharing(true)
-    await onShare(selectedVehicle, targetUser.id)
+    setShareResult(null)
+    
+    const result = await onShare(selectedVehicle, targetUser.id)
     setIsSharing(false)
+    
+    if (result.success) {
+      setShareResult({ type: 'success', message: 'Vehicle shared successfully!' })
+      setTimeout(() => {
+        setShareResult(null)
+        setSelectedVehicle(null)
+        onClose()
+      }, 1500)
+    } else if (result.error) {
+      setShareResult({ type: 'error', message: result.error })
+    }
+  }
+  
+  const handleClose = () => {
+    setSelectedVehicle(null)
+    setShareResult(null)
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-void-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-void-950/80 backdrop-blur-sm" onClick={handleClose} />
       <div className="relative w-full max-w-md card p-6 animate-scale-in">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -460,12 +479,30 @@ function VehicleShareModal({ isOpen, onClose, targetUser, vehicles, onShare }) {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-lg hover:bg-void-700 transition-colors"
           >
             <X className="w-5 h-5 text-void-400" />
           </button>
         </div>
+
+        {/* Success/Error Message */}
+        {shareResult && (
+          <div className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${
+            shareResult.type === 'success' 
+              ? 'bg-success-500/10 border border-success-500/30' 
+              : 'bg-coral-500/10 border border-coral-500/30'
+          }`}>
+            {shareResult.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 text-success-400 flex-shrink-0" />
+            ) : (
+              <XCircle className="w-5 h-5 text-coral-400 flex-shrink-0" />
+            )}
+            <p className={`text-sm ${shareResult.type === 'success' ? 'text-success-400' : 'text-coral-400'}`}>
+              {shareResult.message}
+            </p>
+          </div>
+        )}
 
         {vehicles.length > 0 ? (
           <>
@@ -621,7 +658,12 @@ export default function Social() {
   }
 
   const handleShareVehicle = async (vehicleId, targetUserId) => {
-    await shareVehicle(vehicleId, targetUserId)
+    const result = await shareVehicle(vehicleId, targetUserId)
+    if (result.success) {
+      // Refresh shared vehicles for the target user (they'll see it when they load)
+      // Show success feedback is handled in the modal
+    }
+    return result
   }
   
   const isLoading = loading.connections || loading.global
@@ -749,6 +791,26 @@ export default function Social() {
         )}
       </div>
 
+      {/* Shared Vehicles Section */}
+      {sharedVehicles.length > 0 && (
+        <div className="mt-8 animate-slideUpFade stagger-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-electric-500/20 flex items-center justify-center">
+              <Car className="w-5 h-5 text-electric-400" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold text-white">Shared With You</h3>
+              <p className="text-sm text-void-400">{sharedVehicles.length} vehicles shared by connections</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sharedVehicles.map((share) => (
+              <SharedVehicleCard key={share.id} share={share} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Vehicle Share Modal */}
       <VehicleShareModal
         isOpen={shareModalOpen}
@@ -760,6 +822,72 @@ export default function Social() {
         vehicles={vehicles}
         onShare={handleShareVehicle}
       />
+    </div>
+  )
+}
+
+// Shared Vehicle Card Component
+function SharedVehicleCard({ share }) {
+  const vehicle = share.vehicle
+  const sharedBy = share.shared_by_profile
+  
+  if (!vehicle) return null
+  
+  return (
+    <div className="card p-5 hover:border-electric-500/30 transition-all duration-300 group">
+      <div className="flex items-start gap-4 mb-4">
+        <div 
+          className="w-14 h-14 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: (vehicle.color || '#7c3aed') + '20' }}
+        >
+          <Car className="w-7 h-7" style={{ color: vehicle.color || '#7c3aed' }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-white truncate">{vehicle.name}</h4>
+          <p className="text-sm text-void-400">{vehicle.make} {vehicle.model}</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-void-800/50 rounded-lg p-3">
+          <p className="text-xs text-void-500 mb-1">Status</p>
+          <p className={`text-sm font-medium ${
+            vehicle.status === 'available' ? 'text-success-400' :
+            vehicle.status === 'in-use' ? 'text-neon-400' : 'text-amber-400'
+          }`}>
+            {vehicle.status?.replace('-', ' ') || 'Unknown'}
+          </p>
+        </div>
+        <div className="bg-void-800/50 rounded-lg p-3">
+          <p className="text-xs text-void-500 mb-1">Fuel</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-void-700 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full ${
+                  (vehicle.fuel_level || 0) > 50 ? 'bg-success-400' : 
+                  (vehicle.fuel_level || 0) > 25 ? 'bg-amber-400' : 'bg-coral-400'
+                }`}
+                style={{ width: `${vehicle.fuel_level || 0}%` }}
+              />
+            </div>
+            <span className="text-xs text-void-400">{vehicle.fuel_level || 0}%</span>
+          </div>
+        </div>
+      </div>
+      
+      {sharedBy && (
+        <div className="flex items-center gap-2 pt-3 border-t border-void-700">
+          <div 
+            className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold"
+            style={{ backgroundColor: (sharedBy.color || '#00e5c9') + '30', color: sharedBy.color || '#00e5c9' }}
+          >
+            {sharedBy.avatar_initials || '??'}
+          </div>
+          <p className="text-xs text-void-400">
+            Shared by <span className="text-void-300 font-medium">{sharedBy.full_name}</span>
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -628,12 +628,14 @@ export default function KeyRack() {
   const { user } = useAuth()
   const { 
     vehicles,
+    sharedVehicles,
     loading,
     addCar, 
     updateCar, 
     deleteCar, 
     toggleCarStatus,
     fetchVehicles,
+    fetchSharedVehicles,
   } = useStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCar, setEditingCar] = useState(null)
@@ -658,8 +660,9 @@ export default function KeyRack() {
   useEffect(() => {
     if (user?.id) {
       fetchVehicles(user.id)
+      fetchSharedVehicles(user.id)
     }
-  }, [user?.id, fetchVehicles])
+  }, [user?.id, fetchVehicles, fetchSharedVehicles])
 
   const handleEdit = (car) => {
     setEditingCar(car)
@@ -767,6 +770,123 @@ export default function KeyRack() {
         editCar={editingCar}
         onSave={handleSave}
       />
+
+      {/* Shared Vehicles Section */}
+      {sharedVehicles && sharedVehicles.length > 0 && (
+        <div className="mt-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold text-white">Shared With You</h3>
+              <p className="text-sm text-midnight-400">{sharedVehicles.length} vehicle{sharedVehicles.length !== 1 ? 's' : ''} shared by connections</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sharedVehicles.map((share, index) => (
+              <SharedCarCard 
+                key={share.id}
+                share={share} 
+                index={index}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Shared Car Card Component
+function SharedCarCard({ share, index }) {
+  const vehicle = share.vehicle
+  const sharedBy = share.shared_by_profile
+  
+  if (!vehicle) return null
+  
+  const status = statusConfig[vehicle.status] || statusConfig['available']
+  const StatusIcon = status.icon
+  
+  return (
+    <div 
+      className="glass-card rounded-3xl p-6 animate-slideUpFade shine-effect group hover:scale-[1.02] transition-all duration-500"
+      style={{ animationDelay: `${index * 100}ms` }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-5">
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-500"
+            style={{ 
+              backgroundColor: (vehicle.color || '#3b82f6') + '20',
+              boxShadow: `0 20px 40px ${vehicle.color || '#3b82f6'}15`
+            }}
+          >
+            {carImages[vehicle.image] || '🚗'}
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-bold text-white group-hover:text-blue-400 transition-colors duration-300">{vehicle.name}</h3>
+            <p className="text-sm text-midnight-400">{vehicle.make} {vehicle.model}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Badge */}
+      <div className="flex gap-2 mb-5">
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl ${status.bg} ${status.border} border`}>
+          <StatusIcon className={`w-4 h-4 ${status.color}`} />
+          <span className={`text-sm font-medium ${status.color}`}>{status.label}</span>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="glass-light rounded-xl p-3 text-center">
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <Gauge className="w-4 h-4 text-midnight-400" />
+            <p className="text-xs text-midnight-500">Mileage</p>
+          </div>
+          <p className="font-display font-bold text-white">{(vehicle.mileage || 0).toLocaleString()} <span className="text-xs text-midnight-400">km</span></p>
+        </div>
+        <div className="glass-light rounded-xl p-3 text-center">
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <Fuel className="w-4 h-4 text-midnight-400" />
+            <p className="text-xs text-midnight-500">Fuel</p>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex-1 h-2 bg-midnight-700 rounded-full overflow-hidden max-w-[60px]">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  (vehicle.fuel_level || 0) > 50 ? 'bg-moss-400' : (vehicle.fuel_level || 0) > 25 ? 'bg-yellow-400' : 'bg-red-400'
+                }`}
+                style={{ width: `${vehicle.fuel_level || 0}%` }}
+              />
+            </div>
+            <span className="font-display font-bold text-white text-sm">{vehicle.fuel_level || 0}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Shared By */}
+      {sharedBy && (
+        <div className="flex items-center gap-3 pt-4 border-t border-midnight-700/50">
+          <div 
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold"
+            style={{ 
+              backgroundColor: (sharedBy.color || '#3b82f6') + '30', 
+              color: sharedBy.color || '#3b82f6' 
+            }}
+          >
+            {sharedBy.avatar_initials || '??'}
+          </div>
+          <div>
+            <p className="text-sm text-white font-medium">Shared by {sharedBy.full_name}</p>
+            <p className="text-xs text-midnight-500">You can view this vehicle</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -811,12 +811,33 @@ export const useStore = create((set, get) => ({
     const userId = get().currentUser?.id
     if (!userId) return { error: 'Not logged in' }
 
+    console.log('Sharing vehicle:', vehicleId, 'with user:', targetUserId)
     const { data, error } = await db.shareVehicle(vehicleId, userId, targetUserId)
-    return { data, error }
+    
+    if (error) {
+      console.error('Error sharing vehicle:', error)
+      if (error.code === '23505') {
+        return { error: 'This vehicle is already shared with this user!' }
+      }
+      return { error: error.message || 'Failed to share vehicle' }
+    }
+    
+    console.log('Vehicle shared successfully:', data)
+    return { data, success: true }
   },
 
   unshareVehicle: async (vehicleId, targetUserId) => {
+    const userId = get().currentUser?.id
     const { error } = await db.unshareVehicle(vehicleId, targetUserId)
+    
+    if (!error && userId) {
+      // Refresh shared vehicles list
+      const { data } = await db.getSharedVehicles(userId)
+      if (data) {
+        set({ sharedVehicles: data })
+      }
+    }
+    
     return { error }
   },
 
