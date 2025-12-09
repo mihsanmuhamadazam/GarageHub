@@ -679,16 +679,43 @@ export const useStore = create((set, get) => ({
     const userId = get().currentUser?.id
     if (!userId) return { error: 'Not logged in' }
 
+    if (!shareCode || shareCode.trim().length < 4) {
+      return { error: 'Please enter a valid share code' }
+    }
+
+    console.log('Looking up share code:', shareCode.trim())
+
     // Find user by share code
-    const { data: targetUser, error: findError } = await db.getProfileByShareCode(shareCode)
+    const { data: targetUser, error: findError } = await db.getProfileByShareCode(shareCode.trim())
     
-    if (findError || !targetUser) {
-      return { error: 'User not found with that code' }
+    console.log('Share code lookup result:', { targetUser, findError })
+    
+    if (findError) {
+      console.error('Error finding user by share code:', findError)
+      return { error: 'Error looking up user. Please try again.' }
+    }
+    
+    if (!targetUser) {
+      return { error: 'No user found with that share code. Please check and try again.' }
     }
 
     if (targetUser.id === userId) {
-      return { error: 'Cannot connect with yourself' }
+      return { error: 'You cannot connect with yourself!' }
     }
+
+    // Check if connection already exists
+    const existingConnections = get().connections
+    const existingPending = get().pendingConnections
+    
+    const alreadyConnected = existingConnections.some(c => 
+      c.connected_user_id === targetUser.id || c.user_id === targetUser.id
+    )
+    
+    if (alreadyConnected) {
+      return { error: 'You are already connected with this user!' }
+    }
+
+    console.log('Creating connection request to:', targetUser.full_name)
 
     const { data, error } = await db.createConnection({
       user_id: userId,
@@ -697,10 +724,15 @@ export const useStore = create((set, get) => ({
     })
 
     if (error) {
-      return { error: error.message }
+      console.error('Error creating connection:', error)
+      if (error.code === '23505') {
+        return { error: 'Connection request already sent to this user!' }
+      }
+      return { error: error.message || 'Failed to send connection request' }
     }
 
-    return { data }
+    console.log('Connection request sent successfully:', data)
+    return { data, success: true }
   },
 
   acceptConnection: async (connectionId) => {

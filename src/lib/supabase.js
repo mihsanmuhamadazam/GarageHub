@@ -361,12 +361,44 @@ export const db = {
 
   async getProfileByShareCode(shareCode) {
     if (!supabase) return { data: null, error: null }
+    
+    // Try case-insensitive search using ilike
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('share_code', shareCode.toUpperCase())
+      .ilike('share_code', shareCode.trim())
       .maybeSingle()
-    return { data, error }
+    
+    if (data) {
+      return { data, error: null }
+    }
+    
+    // If not found with ilike, try exact match with different cases
+    if (!data && !error) {
+      // Try uppercase
+      const upperResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('share_code', shareCode.trim().toUpperCase())
+        .maybeSingle()
+      
+      if (upperResult.data) {
+        return { data: upperResult.data, error: null }
+      }
+      
+      // Try lowercase
+      const lowerResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('share_code', shareCode.trim().toLowerCase())
+        .maybeSingle()
+      
+      if (lowerResult.data) {
+        return { data: lowerResult.data, error: null }
+      }
+    }
+    
+    return { data: null, error }
   },
 
   // Shared Vehicles - simplified query
